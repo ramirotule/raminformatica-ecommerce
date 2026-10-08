@@ -16,6 +16,7 @@ import {
 } from "@/lib/products";
 import { useCatalogStore } from "@/store/catalog-store";
 import { useCategoriesStore } from "@/store/categories-store";
+import { useSubcategoriesStore } from "@/store/subcategories-store";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "relevance", label: "Relevancia" },
@@ -41,6 +42,7 @@ export default function CatalogoClient() {
   const initialBrand = searchParams.get("marca") ?? "all";
   const products = useCatalogStore((s) => s.products);
   const storeCategories = useCategoriesStore((s) => s.categories);
+  const storeSubcategories = useSubcategoriesStore((s) => s.subcategories);
 
   const brands = getAllBrands(products);
 
@@ -48,6 +50,9 @@ export default function CatalogoClient() {
     initialCat === "all" || Boolean(initialCat) ? initialCat : "all",
   );
   const [brand, setBrand] = useState<string>(initialBrand || "all");
+  const [subcategory, setSubcategory] = useState<string>(
+    searchParams.get("subcategoria") ?? "all",
+  );
   /** Rangos en moneda de visualización. */
   const [minPrice, setMinPrice] = useState<number | undefined>(undefined);
   const [maxPrice, setMaxPrice] = useState<number | undefined>(undefined);
@@ -60,6 +65,7 @@ export default function CatalogoClient() {
     setQuery(searchParams.get("q") ?? "");
     const cat = searchParams.get("categoria");
     setCategory(cat && cat !== "all" ? cat : "all");
+    setSubcategory(searchParams.get("subcategoria") ?? "all");
     const marca = searchParams.get("marca");
     if (!marca) {
       setBrand("all");
@@ -75,13 +81,17 @@ export default function CatalogoClient() {
     category?: CategoryId | "all";
     query?: string;
     brand?: string;
+    subcategory?: string;
   }) => {
     const params = new URLSearchParams();
     const cat = next.category ?? category;
     const q = next.query !== undefined ? next.query : query;
     const b = next.brand ?? brand;
+    const sub = next.subcategory ?? subcategory;
 
     if (cat && cat !== "all") params.set("categoria", cat);
+    if (cat && cat !== "all" && sub && sub !== "all")
+      params.set("subcategoria", sub);
 
     const trimmed = q.trim();
     if (trimmed) params.set("q", trimmed);
@@ -94,7 +104,26 @@ export default function CatalogoClient() {
 
   const selectCategory = (id: CategoryId | "all") => {
     setCategory(id);
-    pushCatalogUrl({ category: id });
+    setSubcategory("all");
+    // Si la marca elegida no existe en la nueva categoría, se limpia.
+    const available =
+      id === "all"
+        ? products
+        : products.filter((p) => p.category === id);
+    const keepBrand =
+      brand === "all" ||
+      available.some((p) => p.brand.toLowerCase() === brand.toLowerCase());
+    if (!keepBrand) setBrand("all");
+    pushCatalogUrl({
+      category: id,
+      brand: keepBrand ? brand : "all",
+      subcategory: "all",
+    });
+  };
+
+  const selectSubcategory = (name: string) => {
+    setSubcategory(name);
+    pushCatalogUrl({ subcategory: name });
   };
 
   const selectBrand = (nextBrand: string) => {
@@ -109,12 +138,13 @@ export default function CatalogoClient() {
         {
           category,
           brand,
+          subcategory,
           query,
           sort: "relevance",
         },
         products,
       ),
-    [category, brand, query, products],
+    [category, brand, subcategory, query, products],
   );
 
   const toStoreAmount = (amount: number) =>
@@ -135,7 +165,7 @@ export default function CatalogoClient() {
   useEffect(() => {
     setMinPrice(undefined);
     setMaxPrice(undefined);
-  }, [currency, category, brand, query]);
+  }, [currency, category, brand, subcategory, query]);
 
   const storeMin =
     filterByPrice && minPrice != null ? toStoreAmount(minPrice) : undefined;
@@ -148,6 +178,7 @@ export default function CatalogoClient() {
         {
           category,
           brand,
+          subcategory,
           query,
           minPrice: storeMin,
           maxPrice: storeMax,
@@ -155,7 +186,7 @@ export default function CatalogoClient() {
         },
         products,
       ),
-    [category, brand, query, storeMin, storeMax, sort, products],
+    [category, brand, subcategory, query, storeMin, storeMax, sort, products],
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -169,7 +200,7 @@ export default function CatalogoClient() {
   // Reset página al cambiar filtros
   useEffect(() => {
     setPage(1);
-  }, [category, brand, query, storeMin, storeMax, sort]);
+  }, [category, brand, subcategory, query, storeMin, storeMax, sort]);
 
   const pageNumbers = useMemo(() => {
     const maxButtons = 5;
@@ -191,23 +222,56 @@ export default function CatalogoClient() {
   const categories: { id: CategoryId | "all"; label: string }[] = useMemo(() => {
     const fromStore = storeCategories
       .filter((c) => c.active)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((c) => ({ id: c.id, label: c.name }));
-    const list = fromStore.length
-      ? fromStore
-      : Object.entries(categoryLabels).map(([id, label]) => ({
-          id,
-          label,
-        }));
+    const list = (
+      fromStore.length
+        ? fromStore
+        : Object.entries(categoryLabels).map(([id, label]) => ({
+            id,
+            label,
+          }))
+    ).sort((a, b) => a.label.localeCompare(b.label, "es"));
     return [{ id: "all", label: "Todos" }, ...list];
   }, [storeCategories]);
+
+  /** Subcategorías activas con productos de cada categoría, ordenadas A → Z. */
+  const subcategoriesByCategory = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const sub of storeSubcategories) {
+      if (!sub.active) continue;
+      const hasProducts = products.some(
+        (p) =>
+          p.category === sub.categoryId &&
+          (p.subcategory ?? "").toLowerCase() === sub.name.toLowerCase(),
+      );
+      if (!hasProducts) continue;
+      const list = map.get(sub.categoryId) ?? [];
+      list.push(sub.name);
+      map.set(sub.categoryId, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return map;
+  }, [storeSubcategories, products]);
+
+  /** Solo las marcas que tienen productos en la categoría elegida. */
+  const categoryBrands = useMemo(
+    () =>
+      getAllBrands(
+        category === "all"
+          ? products
+          : products.filter((p) => p.category === category),
+      ),
+    [products, category],
+  );
 
   const brandOptions = useMemo(
     () => [
       { value: "all", label: "Todas las marcas" },
-      ...brands.map((b) => ({ value: b, label: b })),
+      ...categoryBrands.map((b) => ({ value: b, label: b })),
     ],
-    [brands],
+    [categoryBrands],
   );
 
   const priceActive =
@@ -215,6 +279,7 @@ export default function CatalogoClient() {
 
   const activeFilters =
     (brand !== "all" ? 1 : 0) +
+    (subcategory !== "all" ? 1 : 0) +
     (priceActive ? 1 : 0) +
     (query.trim() ? 1 : 0) +
     (category !== "all" ? 1 : 0);
@@ -222,6 +287,7 @@ export default function CatalogoClient() {
   const clearFilters = () => {
     setCategory("all");
     setBrand("all");
+    setSubcategory("all");
     setMinPrice(undefined);
     setMaxPrice(undefined);
     setFilterByPrice(false);
@@ -250,19 +316,48 @@ export default function CatalogoClient() {
               <div className="flex flex-col gap-1">
                 {categories.map((cat) => {
                   const active = cat.id === category;
+                  const subs = subcategoriesByCategory.get(cat.id) ?? [];
                   return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => selectCategory(cat.id)}
-                      className={`cursor-pointer rounded-lg border-none px-3 py-2.5 text-left text-sm ${
-                        active
-                          ? "bg-primary-soft font-bold text-primary-dark"
-                          : "bg-transparent font-medium text-body-text"
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
+                    <div key={cat.id} className="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => selectCategory(cat.id)}
+                        aria-expanded={subs.length > 0 ? active : undefined}
+                        className={`cursor-pointer rounded-lg border-none px-3 py-2.5 text-left text-sm ${
+                          active
+                            ? "bg-primary-soft font-bold text-primary-dark"
+                            : "bg-transparent font-medium text-body-text"
+                        }`}
+                      >
+                        {cat.label}
+                      </button>
+                      {active && subs.length > 0 && (
+                        <div className="ml-3 flex flex-col gap-0.5 border-l border-border pl-2">
+                          {subs.map((name) => {
+                            const selected =
+                              subcategory.toLowerCase() === name.toLowerCase();
+                            return (
+                              <button
+                                key={name}
+                                type="button"
+                                // Tocar la elegida de nuevo la deselecciona.
+                                onClick={() =>
+                                  selectSubcategory(selected ? "all" : name)
+                                }
+                                aria-pressed={selected}
+                                className={`cursor-pointer rounded-md border-none px-3 py-1.5 text-left text-[13px] ${
+                                  selected
+                                    ? "bg-primary-softer font-bold text-primary-dark"
+                                    : "bg-transparent font-medium text-muted"
+                                }`}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

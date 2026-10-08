@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useId, useState } from "react";
+import { CategoryPlaceholder } from "@/components/CategoryIcon";
 import type { Product } from "@/lib/products";
 import { productImages } from "@/lib/products";
 import { productMeta } from "@/lib/format";
@@ -101,9 +102,7 @@ export function ProductGallery({ product, className = "" }: Props) {
             </span>
           </span>
         ) : (
-          <span className="flex h-full items-center justify-center px-3 text-center font-mono text-xs text-muted-soft">
-            foto: {product.name}
-          </span>
+          <CategoryPlaceholder category={product.category} />
         )}
         {current && (
           <span className="absolute right-3 bottom-3 z-10 rounded-md bg-foreground/70 px-2.5 py-1 text-[11px] font-semibold text-white">

@@ -511,6 +511,7 @@ export type SortOption =
 export type ProductFilters = {
   category?: CategoryId | "all";
   brand?: string | "all";
+  subcategory?: string | "all";
   query?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -579,6 +580,7 @@ export function filterProducts(
   const {
     category = "all",
     brand = "all",
+    subcategory = "all",
     query = "",
     minPrice,
     maxPrice,
@@ -590,6 +592,11 @@ export function filterProducts(
   let filtered = list.filter((p) => {
     if (category !== "all" && p.category !== category) return false;
     if (brand !== "all" && p.brand.toLowerCase() !== brand.toLowerCase())
+      return false;
+    if (
+      subcategory !== "all" &&
+      (p.subcategory ?? "").toLowerCase() !== subcategory.toLowerCase()
+    )
       return false;
     if (minPrice != null && p.price < minPrice) return false;
     if (maxPrice != null && p.price > maxPrice) return false;

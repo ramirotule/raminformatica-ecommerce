@@ -61,6 +61,8 @@ async function sendWithFormSubmit(input: {
   // FormSubmit rechaza llamadas sin Origin/Referer de un "web server".
   const res = await fetch(`https://formsubmit.co/ajax/${input.to}`, {
     method: "POST",
+    // Evita que el formulario quede "Enviando…" si FormSubmit no responde.
+    signal: AbortSignal.timeout(15_000),
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",

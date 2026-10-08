@@ -425,3 +425,38 @@ create policy "ram_media_admin_delete"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'ram-media' and public.ram_is_admin());
+
+-- Subcategorías (cada una pertenece a una categoría)
+create table if not exists public.ram_subcategories (
+  id uuid primary key default gen_random_uuid(),
+  category_id text not null references public.ram_categories (id) on delete cascade on update cascade,
+  name text not null,
+  sort_order integer not null default 0,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint ram_subcategories_unique unique (category_id, name)
+);
+
+alter table public.ram_subcategories enable row level security;
+
+drop policy if exists "ram_subcategories_select" on public.ram_subcategories;
+create policy "ram_subcategories_select" on public.ram_subcategories
+  for select to anon, authenticated using (true);
+
+drop policy if exists "ram_subcategories_admin_insert" on public.ram_subcategories;
+create policy "ram_subcategories_admin_insert" on public.ram_subcategories
+  for insert to authenticated with check (public.ram_is_admin());
+
+drop policy if exists "ram_subcategories_admin_update" on public.ram_subcategories;
+create policy "ram_subcategories_admin_update" on public.ram_subcategories
+  for update to authenticated
+  using (public.ram_is_admin())
+  with check (public.ram_is_admin());
+
+drop policy if exists "ram_subcategories_admin_delete" on public.ram_subcategories;
+create policy "ram_subcategories_admin_delete" on public.ram_subcategories
+  for delete to authenticated using (public.ram_is_admin());
+
+grant select on public.ram_subcategories to anon, authenticated;
+grant insert, update, delete on public.ram_subcategories to authenticated;

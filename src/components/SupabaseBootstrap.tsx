@@ -5,6 +5,7 @@ import { useBrandsStore } from "@/store/brands-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCatalogStore } from "@/store/catalog-store";
 import { useCategoriesStore } from "@/store/categories-store";
+import { useSubcategoriesStore } from "@/store/subcategories-store";
 import { useStoreConfig } from "@/store/store-config";
 import { onAuthSessionChange, useAuthStore } from "@/store/auth-store";
 import { useAdminStore } from "@/store/admin-store";
@@ -33,6 +34,7 @@ export function SupabaseBootstrap() {
     void fetchConfig();
     void useBrandsStore.getState().fetchBrands();
     void useCategoriesStore.getState().fetchCategories();
+    void useSubcategoriesStore.getState().fetchSubcategories();
     const unsub = onAuthSessionChange(handleSession);
     void initAuth();
     return unsub;

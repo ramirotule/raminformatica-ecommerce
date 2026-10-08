@@ -204,3 +204,28 @@ export function CategoryIcon({ category, className = "" }: Props) {
     </div>
   );
 }
+
+/**
+ * Placeholder para productos sin foto: ícono de la categoría + "Foto no
+ * disponible". Se escala con el tamaño del contenedor (container queries).
+ */
+export function CategoryPlaceholder({
+  category,
+  label = "Foto no disponible",
+}: {
+  category: CategoryId;
+  label?: string;
+}) {
+  const icon = resolveIconKey(category);
+
+  return (
+    <span className="@container absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-soft">
+      <span className="flex items-center justify-center [&>svg]:!h-[34cqw] [&>svg]:!w-[34cqw] [&>svg]:!max-h-[140px] [&>svg]:!max-w-[140px] [&>svg]:!stroke-[1.1]">
+        <CategoryGlyph icon={icon} />
+      </span>
+      <span className="hidden px-2 text-center font-sans text-[11px] font-semibold @[120px]:block @[300px]:text-[13px]">
+        {label}
+      </span>
+    </span>
+  );
+}

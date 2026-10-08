@@ -2,7 +2,9 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { AdminFormModal } from "@/components/admin/AdminFormModal";
+import { SubcategoriesModal } from "@/components/admin/SubcategoriesModal";
 import { useDialog } from "@/components/DialogProvider";
+import { useSubcategoriesStore } from "@/store/subcategories-store";
 import {
   slugifyCategoryId,
   useCategoriesStore,
@@ -19,6 +21,8 @@ export default function AdminCategoriasPage() {
   const updateCategory = useCategoriesStore((s) => s.updateCategory);
   const deleteCategory = useCategoriesStore((s) => s.deleteCategory);
 
+  const subcategories = useSubcategoriesStore((s) => s.subcategories);
+  const [subFor, setSubFor] = useState<Category | null>(null);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Category | null>(null);
   const [name, setName] = useState("");
@@ -169,8 +173,10 @@ export default function AdminCategoriasPage() {
         </div>
       </AdminFormModal>
 
+      <SubcategoriesModal category={subFor} onClose={() => setSubFor(null)} />
+
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div className="hidden grid-cols-[80px_1fr_120px_100px_140px] gap-3 bg-primary-softer px-4 py-3 text-xs font-bold text-muted uppercase md:grid">
+        <div className="hidden grid-cols-[80px_1fr_120px_100px_180px] gap-3 bg-primary-softer px-4 py-3 text-xs font-bold text-muted uppercase md:grid">
           <div>Orden</div>
           <div>Nombre</div>
           <div>Id</div>
@@ -180,15 +186,28 @@ export default function AdminCategoriasPage() {
         {filtered.map((c) => (
           <div
             key={c.id}
-            className="grid grid-cols-1 gap-2 border-t border-border-soft px-4 py-3 text-sm md:grid-cols-[80px_1fr_120px_100px_140px] md:items-center md:gap-3"
+            className="grid grid-cols-1 gap-2 border-t border-border-soft px-4 py-3 text-sm md:grid-cols-[80px_1fr_120px_100px_180px] md:items-center md:gap-3"
           >
             <div className="text-muted">{c.sortOrder}</div>
-            <div className="font-semibold">{c.name}</div>
+            <div>
+              <div className="font-semibold">{c.name}</div>
+              <div className="text-xs text-muted">
+                {subcategories.filter((x) => x.categoryId === c.id).length}{" "}
+                subcategorías
+              </div>
+            </div>
             <div className="font-mono text-[12.5px] text-muted">{c.id}</div>
             <div className={c.active ? "text-success" : "text-sale"}>
               {c.active ? "Activa" : "Inactiva"}
             </div>
             <div className="flex gap-1.5 md:justify-end">
+              <button
+                type="button"
+                onClick={() => setSubFor(c)}
+                className="h-8 cursor-pointer rounded-lg border border-border bg-surface px-2.5 text-xs font-semibold hover:bg-accent-soft"
+              >
+                Subcategorías
+              </button>
               <button
                 type="button"
                 onClick={() => openEdit(c)}

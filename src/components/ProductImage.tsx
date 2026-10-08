@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { Product } from "@/lib/products";
 import { productImages } from "@/lib/products";
+import { CategoryPlaceholder } from "@/components/CategoryIcon";
 import { productMeta } from "@/lib/format";
 
 type Props = {
@@ -51,7 +52,7 @@ export function ProductImage({
           </span>
         </span>
       ) : (
-        <span className="px-2 text-center">foto: {alt}</span>
+        <CategoryPlaceholder category={product.category} />
       )}
     </div>
   );
