@@ -21,6 +21,8 @@ type Props<T extends string> = {
   className?: string;
   buttonClassName?: string;
   fullWidth?: boolean;
+  /** Alinea el menú al borde derecho (útil en columnas pegadas a la derecha). */
+  menuAlignRight?: boolean;
 };
 
 export function ComboSelect<T extends string>({
@@ -36,6 +38,7 @@ export function ComboSelect<T extends string>({
   className = "",
   buttonClassName = "",
   fullWidth = false,
+  menuAlignRight = false,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -130,7 +133,9 @@ export function ComboSelect<T extends string>({
         </button>
 
         {open && (
-          <div className="absolute top-[calc(100%+6px)] left-0 z-40 w-full min-w-[220px] overflow-hidden rounded-lg border border-border bg-surface shadow-[0_12px_32px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.45)]">
+          <div
+            className={`absolute top-[calc(100%+6px)] ${menuAlignRight ? "right-0" : "left-0"} z-40 w-full min-w-[220px] overflow-hidden rounded-lg border border-border bg-surface shadow-[0_12px_32px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.45)]`}
+          >
             {searchable && (
               <div className="border-b border-border p-2">
                 <input

@@ -17,7 +17,8 @@ const sizes = {
     width: 360,
     height: 180,
     // Hacemos crecer el ancho (no el alto) para mantener la altura del header.
-    className: "h-[88px] w-[252px] md:h-[104px] md:w-[344px]",
+    className:
+      "h-[72px] w-[190px] sm:h-[88px] sm:w-[252px] md:h-[104px] md:w-[344px]",
   },
   lg: { width: 180, height: 180, className: "h-36 w-36" },
 };

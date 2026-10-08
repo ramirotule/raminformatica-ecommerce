@@ -44,7 +44,7 @@ export default function CatalogoClient() {
   const storeCategories = useCategoriesStore((s) => s.categories);
   const storeSubcategories = useSubcategoriesStore((s) => s.subcategories);
 
-  const brands = getAllBrands(products);
+  const brands = useMemo(() => getAllBrands(products), [products]);
 
   const [category, setCategory] = useState<CategoryId | "all">(
     initialCat === "all" || Boolean(initialCat) ? initialCat : "all",
@@ -60,6 +60,8 @@ export default function CatalogoClient() {
   const [sort, setSort] = useState<SortOption>("relevance");
   const [query, setQuery] = useState(initialQuery);
   const [page, setPage] = useState(1);
+  /** En celular la lista de categorías es un acordeón (cerrado por defecto). */
+  const [catOpen, setCatOpen] = useState(false);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -104,6 +106,8 @@ export default function CatalogoClient() {
 
   const selectCategory = (id: CategoryId | "all") => {
     setCategory(id);
+    // En celular, al elegir una categoría sin subcategorías se pliega el menú.
+    if (!(subcategoriesByCategory.get(id)?.length ?? 0)) setCatOpen(false);
     setSubcategory("all");
     // Si la marca elegida no existe en la nueva categoría, se limpia.
     const available =
@@ -296,24 +300,8 @@ export default function CatalogoClient() {
     router.push("/catalogo", { scroll: false });
   };
 
-  return (
+  const categoryItems = (
     <>
-      {/* Full-bleed: menú pegado a la izquierda del viewport */}
-      <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
-        <div className="px-4 pt-5 text-[13px] text-muted-soft md:px-6 lg:px-4 xl:px-5">
-          <Link href="/" className="text-muted-soft">
-            Inicio
-          </Link>{" "}
-          / <span className="text-foreground">Catálogo</span>
-        </div>
-
-        <div className="flex flex-col gap-8 px-4 py-5 pb-[60px] md:px-6 lg:flex-row lg:items-start lg:gap-6 lg:px-0 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-8">
-          <aside className="w-full shrink-0 space-y-7 lg:w-[210px] lg:pl-1 xl:w-[220px]">
-            <div>
-              <div className="mb-3 text-[13px] font-bold tracking-wide text-muted uppercase">
-                Categoría
-              </div>
-              <div className="flex flex-col gap-1">
                 {categories.map((cat) => {
                   const active = cat.id === category;
                   const subs = subcategoriesByCategory.get(cat.id) ?? [];
@@ -360,6 +348,90 @@ export default function CatalogoClient() {
                     </div>
                   );
                 })}
+    </>
+  );
+
+  return (
+    <>
+      {/* Full-bleed: menú pegado a la izquierda del viewport */}
+      <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
+        <div className="px-4 pt-5 text-[13px] text-muted-soft md:px-6 lg:px-4 xl:px-5">
+          <Link href="/" className="text-muted-soft">
+            Inicio
+          </Link>{" "}
+          / <span className="text-foreground">Catálogo</span>
+        </div>
+
+        <div className="flex flex-col gap-5 px-4 py-5 pb-[60px] md:px-6 lg:flex-row lg:items-start lg:gap-6 lg:px-0 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-8">
+          {/* Celular: categoría, luego marca + orden en una fila y buscador debajo */}
+          <div className="space-y-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setCatOpen((v) => !v)}
+              aria-expanded={catOpen}
+              className="flex w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3.5 py-2.5 text-left text-sm font-medium text-foreground"
+            >
+              <span className="truncate">
+                <span className="text-muted">Categoría: </span>
+                {categories.find((c) => c.id === category)?.label ?? "Todos"}
+                {subcategory !== "all" ? ` · ${subcategory}` : ""}
+              </span>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                className={`shrink-0 transition-transform ${catOpen ? "rotate-180" : ""}`}
+                aria-hidden="true"
+              >
+                <path d="M3 4.5 6 7.5 9 4.5" />
+              </svg>
+            </button>
+            {catOpen && (
+              <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-1.5">
+                {categoryItems}
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <ComboSelect
+                value={brand}
+                options={brandOptions}
+                onChange={selectBrand}
+                placeholder="Marca"
+                searchPlaceholder="Buscar marca…"
+                searchable
+                fullWidth
+              />
+              <ComboSelect
+                value={sort}
+                options={SORT_OPTIONS}
+                onChange={setSort}
+                placeholder="Ordenar"
+                searchable
+                searchPlaceholder="Buscar orden…"
+                fullWidth
+                menuAlignRight
+              />
+            </div>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar productos…"
+              aria-label="Buscar productos"
+              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-soft focus:border-primary"
+            />
+          </div>
+
+          <aside className="hidden w-full shrink-0 lg:block lg:space-y-7 lg:w-[210px] lg:pl-1 xl:w-[220px]">
+            <div>
+              <div className="mb-3 text-[13px] font-bold tracking-wide text-muted uppercase">
+                Categoría
+              </div>
+              <div className="flex flex-col gap-1">
+                {categoryItems}
               </div>
             </div>
 
@@ -388,7 +460,7 @@ export default function CatalogoClient() {
               )}
             </div>
 
-            <div className="flex min-w-0 flex-1 items-center gap-4">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 lg:flex-nowrap lg:gap-4">
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 lg:ml-6 xl:ml-10">
                 {priceBounds && (
                   <label className="flex shrink-0 cursor-pointer items-center gap-2 text-[13px] font-semibold text-foreground">
@@ -424,7 +496,7 @@ export default function CatalogoClient() {
                 )}
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 max-lg:w-full lg:shrink-0 lg:justify-end">
                 <ComboSelect
                   value={brand}
                   options={brandOptions}
@@ -432,7 +504,7 @@ export default function CatalogoClient() {
                   placeholder="Marca"
                   searchPlaceholder="Buscar marca…"
                   searchable
-                  className="min-w-[140px] sm:min-w-[150px]"
+                  className="min-w-[140px] max-lg:hidden sm:min-w-[150px]"
                 />
                 {activeFilters > 0 && (
                   <button
@@ -444,6 +516,7 @@ export default function CatalogoClient() {
                   </button>
                 )}
                 <ComboSelect
+                  className="max-lg:hidden"
                   label="Ordenar"
                   value={sort}
                   options={SORT_OPTIONS}
