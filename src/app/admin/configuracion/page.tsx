@@ -190,6 +190,42 @@ export default function AdminConfigPage() {
           />
         </section>
 
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
+            Modo mantenimiento
+          </h2>
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={form.maintenanceEnabled}
+              onChange={(e) =>
+                setForm({ ...form, maintenanceEnabled: e.target.checked })
+              }
+            />
+            Mostrar página de mantenimiento a los visitantes
+          </label>
+          <p className="text-xs text-muted">
+            Al guardar, la tienda pública deja de verse. El panel de admin y
+            tu sesión de administrador siguen funcionando con normalidad.
+          </p>
+          <input
+            className={inputClass}
+            placeholder="Título"
+            value={form.maintenanceTitle}
+            onChange={(e) =>
+              setForm({ ...form, maintenanceTitle: e.target.value })
+            }
+          />
+          <input
+            className={inputClass}
+            placeholder="Mensaje"
+            value={form.maintenanceMessage}
+            onChange={(e) =>
+              setForm({ ...form, maintenanceMessage: e.target.value })
+            }
+          />
+        </section>
+
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
             type="submit"

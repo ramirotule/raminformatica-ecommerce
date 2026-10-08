@@ -48,6 +48,9 @@ export type StoreConfigRow = {
   installments_enabled: boolean;
   max_installments: number;
   announcement: string;
+  maintenance_enabled: boolean;
+  maintenance_title: string;
+  maintenance_message: string;
 };
 
 export type ProfileRow = {
@@ -211,6 +214,9 @@ export function mapStoreConfig(row: StoreConfigRow) {
     installmentsEnabled: row.installments_enabled,
     maxInstallments: row.max_installments,
     announcement: row.announcement,
+    maintenanceEnabled: row.maintenance_enabled ?? false,
+    maintenanceTitle: row.maintenance_title ?? "",
+    maintenanceMessage: row.maintenance_message ?? "",
   };
 }
 
@@ -226,6 +232,9 @@ export function toStoreConfigUpdate(config: ReturnType<typeof mapStoreConfig>) {
     installments_enabled: config.installmentsEnabled,
     max_installments: config.maxInstallments,
     announcement: config.announcement,
+    maintenance_enabled: config.maintenanceEnabled,
+    maintenance_title: config.maintenanceTitle,
+    maintenance_message: config.maintenanceMessage,
     updated_at: new Date().toISOString(),
   };
 }

@@ -130,8 +130,17 @@ create table if not exists public.ram_store_config (
   installments_enabled boolean not null default true,
   max_installments integer not null default 12,
   announcement text not null default '',
+  maintenance_enabled boolean not null default false,
+  maintenance_title text not null default 'Estamos actualizando la pagina para una mejor experiencia.',
+  maintenance_message text not null default 'Disculpe las molestias.',
   updated_at timestamptz not null default now()
 );
+
+-- Migración para bases ya creadas
+alter table public.ram_store_config
+  add column if not exists maintenance_enabled boolean not null default false,
+  add column if not exists maintenance_title text not null default 'Estamos actualizando la pagina para una mejor experiencia.',
+  add column if not exists maintenance_message text not null default 'Disculpe las molestias.';
 
 create table if not exists public.ram_profiles (
   id uuid primary key references auth.users (id) on delete cascade,

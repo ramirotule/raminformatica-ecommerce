@@ -20,6 +20,9 @@ export type StoreConfig = {
   installmentsEnabled: boolean;
   maxInstallments: number;
   announcement: string;
+  maintenanceEnabled: boolean;
+  maintenanceTitle: string;
+  maintenanceMessage: string;
 };
 
 type ConfigState = {
@@ -42,6 +45,9 @@ const defaultConfig: StoreConfig = {
   installmentsEnabled: true,
   maxInstallments: 12,
   announcement: "Hasta 12 cuotas sin interés en productos seleccionados.",
+  maintenanceEnabled: false,
+  maintenanceTitle: "Estamos actualizando la pagina para una mejor experiencia.",
+  maintenanceMessage: "Disculpe las molestias.",
 };
 
 export const useStoreConfig = create<ConfigState>((set, get) => ({
