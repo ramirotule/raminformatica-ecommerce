@@ -1,14 +1,13 @@
 "use client";
 
 import { whatsappHref } from "@/lib/social";
-import { useStoreConfig } from "@/store/store-config";
 
 const PREFILL =
-  "Hola! estoy en la web de RJ Tech y quiero hacer una consulta 🙂";
+  "Hola! estoy en la web de RAM Informatica y quiero hacer una consulta 🙂";
+const CONTACT_PHONE = "5492954227622";
 
 export function ContactWhatsAppCard() {
-  const phone = useStoreConfig((s) => s.config.supportPhone);
-  const href = whatsappHref(phone, PREFILL);
+  const href = whatsappHref(CONTACT_PHONE, PREFILL);
 
   return (
     <a

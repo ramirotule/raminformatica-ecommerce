@@ -43,7 +43,7 @@ export default function HomePage() {
         <div className="relative h-[280px] w-full min-w-0 flex-1 overflow-hidden rounded-2xl md:h-[340px]">
           <Image
             src="/home-picture.png"
-            alt="Equipos RJ Tech: celulares, notebooks, audio y más"
+            alt="Equipos RAM Informatica: celulares, notebooks, audio y mas"
             fill
             priority
             className="object-cover object-center"

@@ -32,10 +32,10 @@ type ConfigState = {
 };
 
 const defaultConfig: StoreConfig = {
-  storeName: "RJ Tech",
-  tagline: "Tecnología • Innovación • Tu mundo",
-  supportEmail: "rjtech.lp@gmail.com",
-  supportPhone: "+54 11 4000-1234",
+  storeName: "RAM Informatica",
+  tagline: "Tecnologia • Innovacion • Tu mundo",
+  supportEmail: "raminformatik@gmail.com",
+  supportPhone: "2954227622",
   currency: "USD",
   freeShippingFrom: 500000,
   shippingCost: 15000,
@@ -52,7 +52,7 @@ export const useStoreConfig = create<ConfigState>((set, get) => ({
     set({ loading: true });
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_store_config")
+      .from("ram_store_config")
       .select("*")
       .eq("id", 1)
       .maybeSingle();
@@ -72,7 +72,7 @@ export const useStoreConfig = create<ConfigState>((set, get) => ({
     const next = { ...get().config, ...partial };
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_store_config")
+      .from("ram_store_config")
       .upsert({ id: 1, ...toStoreConfigUpdate(next) })
       .select("*")
       .single();

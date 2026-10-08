@@ -3,9 +3,9 @@ import { ContactForm } from "./ContactForm";
 import { ContactWhatsAppCard } from "./ContactWhatsAppCard";
 
 export const metadata: Metadata = {
-  title: "Contacto — RJ Tech",
+  title: "Contacto — RAM Informatica",
   description:
-    "Escribinos: consultas, stock, envíos o asesoramiento. RJ Tech, Santa Rosa, La Pampa.",
+    "Escribinos: consultas, stock, envios o asesoramiento. RAM Informatica, Santa Rosa, La Pampa.",
 };
 
 export default function ContactoPage() {
@@ -29,9 +29,9 @@ export default function ContactoPage() {
           <p>
             Completá el formulario y te llega un mail a{" "}
             <span className="font-semibold text-foreground">
-              rjtech.lp@gmail.com
+              raminformatik@gmail.com
             </span>
-            . Si preferís chat, escribinos por WhatsApp.
+            . Si preferis chat, escribinos por WhatsApp al 2954227622.
           </p>
           <ContactWhatsAppCard />
         </div>

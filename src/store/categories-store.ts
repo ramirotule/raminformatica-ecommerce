@@ -58,7 +58,7 @@ export const useCategoriesStore = create<CategoriesState>((set) => ({
     set({ loading: true });
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_categories")
+      .from("ram_categories")
       .select("*")
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
@@ -80,7 +80,7 @@ export const useCategoriesStore = create<CategoriesState>((set) => ({
     if (!id || !name) throw new Error("Nombre e id son obligatorios");
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_categories")
+      .from("ram_categories")
       .insert({
         id,
         name,
@@ -109,7 +109,7 @@ export const useCategoriesStore = create<CategoriesState>((set) => ({
     if (input.active != null) patch.active = input.active;
 
     const { data, error } = await supabase
-      .from("rjtech_categories")
+      .from("ram_categories")
       .update(patch)
       .eq("id", id)
       .select("*")
@@ -130,7 +130,7 @@ export const useCategoriesStore = create<CategoriesState>((set) => ({
   deleteCategory: async (id) => {
     const supabase = createClient();
     const { count } = await supabase
-      .from("rjtech_products")
+      .from("ram_products")
       .select("id", { count: "exact", head: true })
       .eq("category", id);
     if ((count ?? 0) > 0) {
@@ -139,7 +139,7 @@ export const useCategoriesStore = create<CategoriesState>((set) => ({
       );
     }
     const { error } = await supabase
-      .from("rjtech_categories")
+      .from("ram_categories")
       .delete()
       .eq("id", id);
     if (error) throw new Error(error.message);

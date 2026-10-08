@@ -49,7 +49,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     set({ loading: true });
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_brands")
+      .from("ram_brands")
       .select("*")
       .order("name", { ascending: true });
 
@@ -75,7 +75,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
       throw new Error("Sesión expirada. Volvé a iniciar sesión en el admin.");
     }
 
-    const { data, error } = await supabase.rpc("rjtech_ensure_brand", {
+    const { data, error } = await supabase.rpc("ram_ensure_brand", {
       p_name: trimmed,
     });
     if (error) throw new Error(error.message);
@@ -85,7 +85,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
 
     if (input.logoUrl) {
       const { data: updated, error: upErr } = await supabase
-        .from("rjtech_brands")
+        .from("ram_brands")
         .update({
           logo_url: input.logoUrl,
           updated_at: new Date().toISOString(),
@@ -124,7 +124,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     if (input.logoUrl !== undefined) patch.logo_url = input.logoUrl;
 
     const { data, error } = await supabase
-      .from("rjtech_brands")
+      .from("ram_brands")
       .update(patch)
       .eq("id", id)
       .select("*")
@@ -136,7 +136,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     // Si renombramos, sincronizar productos que usaban el nombre viejo
     if (input.name != null && current && current.name !== input.name.trim()) {
       await supabase
-        .from("rjtech_products")
+        .from("ram_products")
         .update({
           brand: input.name.trim(),
           updated_at: new Date().toISOString(),
@@ -153,7 +153,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
   },
   deleteBrand: async (id) => {
     const supabase = createClient();
-    const { error } = await supabase.from("rjtech_brands").delete().eq("id", id);
+    const { error } = await supabase.from("ram_brands").delete().eq("id", id);
     if (error) throw new Error(error.message);
     set((s) => ({ brands: s.brands.filter((b) => b.id !== id) }));
   },

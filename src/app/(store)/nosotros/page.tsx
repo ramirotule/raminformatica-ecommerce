@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Nosotros — RJ Tech",
+  title: "Nosotros — RAM Informática",
   description:
-    "Somos RJ Tech, fanáticos de la tecnología en Santa Rosa, La Pampa. Stock real, precios claros y ganas de asesorarte.",
+    "Somos RAM Informática, fanáticos de la tecnología en Santa Rosa, La Pampa. Stock real, precios claros y ganas de asesorarte.",
 };
 
 export default function NosotrosPage() {
@@ -17,7 +17,7 @@ export default function NosotrosPage() {
 
         <div className="relative mx-auto w-full max-w-[1280px] px-6 py-16 md:px-10 md:py-20">
           <p className="rj-fade-up mb-4 text-[13px] font-bold tracking-[0.18em] text-primary uppercase">
-            RJ Tech · Santa Rosa, La Pampa
+            RAM Informática · Santa Rosa, La Pampa
           </p>
           <h1 className="rj-fade-up-delay max-w-[18ch] text-[40px] leading-[1.05] font-bold tracking-tight text-foreground md:text-[56px]">
             Tecnología con alma pampeana.
@@ -80,7 +80,7 @@ export default function NosotrosPage() {
           </h2>
           <div className="space-y-4 text-[15px] leading-relaxed text-body-text">
             <p>
-              RJ Tech no salió de una oficina de vidrio en Capital. Salimos de
+              RAM Informática no salió de una oficina de vidrio en Capital. Salimos de
               acá: de Santa Rosa, La Pampa, donde si algo se rompe o no llega,
               se nota. Por eso armamos un ecommerce con precios
               claros y cero chamuyo barato.
@@ -173,6 +173,30 @@ export default function NosotrosPage() {
               </div>
               <div className="font-semibold text-foreground">Todo el país</div>
             </div>
+            <div>
+              <div className="mb-1 text-[11px] font-bold tracking-wider text-muted uppercase">
+                WhatsApp
+              </div>
+              <div className="font-semibold text-foreground">2954227622</div>
+            </div>
+          </div>
+          <div className="mt-6 grid gap-3 text-sm text-body-text md:grid-cols-2">
+            <a
+              href="https://www.instagram.com/ram.informatica"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-border bg-surface px-4 py-3 font-medium text-foreground no-underline hover:!no-underline"
+            >
+              Instagram: @ram.informatica
+            </a>
+            <a
+              href="https://www.facebook.com/ram.informatica"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-border bg-surface px-4 py-3 font-medium text-foreground no-underline hover:!no-underline"
+            >
+              Facebook: ram.informatica
+            </a>
           </div>
         </div>
       </section>

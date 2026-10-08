@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { convertImageToWebp } from "@/lib/images/toWebp";
 
-export const RJTECH_MEDIA_BUCKET = "rjtech-media";
+export const RAM_MEDIA_BUCKET = "ram-media";
 
 export type UploadedWebp = {
   path: string;
@@ -24,7 +24,7 @@ export async function uploadImageAsWebp(
   const path = `${folder}/${crypto.randomUUID()}-${webp.fileName}`;
 
   const { error } = await supabase.storage
-    .from(RJTECH_MEDIA_BUCKET)
+    .from(RAM_MEDIA_BUCKET)
     .upload(path, webp.blob, {
       contentType: "image/webp",
       upsert: false,
@@ -34,7 +34,7 @@ export async function uploadImageAsWebp(
   if (error) throw new Error(error.message);
 
   const { data } = supabase.storage
-    .from(RJTECH_MEDIA_BUCKET)
+    .from(RAM_MEDIA_BUCKET)
     .getPublicUrl(path);
 
   return {
@@ -49,5 +49,5 @@ export async function uploadImageAsWebp(
 export async function removeStoragePath(path: string) {
   if (!path) return;
   const supabase = createClient();
-  await supabase.storage.from(RJTECH_MEDIA_BUCKET).remove([path]);
+  await supabase.storage.from(RAM_MEDIA_BUCKET).remove([path]);
 }

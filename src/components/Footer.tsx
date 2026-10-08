@@ -1,21 +1,16 @@
 import { whatsappHref } from "@/lib/social";
 
-/** Editá estos links con las cuentas reales de RJ Tech. */
+/** Redes oficiales de RAM Informatica. */
 const SOCIAL_LINKS = [
   {
     id: "instagram",
     label: "Instagram",
-    href: "https://www.instagram.com/rjtech.lp",
+    href: "https://www.instagram.com/ram.informatica",
   },
   {
     id: "facebook",
     label: "Facebook",
-    href: "https://www.facebook.com/rjtech.lp",
-  },
-  {
-    id: "tiktok",
-    label: "TikTok",
-    href: "https://www.tiktok.com/@rjtech.lp",
+    href: "https://www.facebook.com/ram.informatica",
   },
   {
     id: "whatsapp",
@@ -31,7 +26,7 @@ export function Footer() {
         <div>
           <div className="mb-2.5 text-[12.5px] font-bold">Redes Sociales</div>
           <p className="mb-3 max-w-[220px] text-[13px] leading-relaxed text-muted">
-          Seguinos en nuestras redes sociales y mantenete al tanto de los últimos ingresos, novedades, promociones y lanzamientos de RJ Tech.
+          Seguinos en nuestras redes sociales y mantenete al tanto de los ultimos ingresos, novedades, promociones y lanzamientos de RAM Informatica.
           </p>
           <div className="flex flex-wrap gap-2">
             {SOCIAL_LINKS.map((social) => (
@@ -94,7 +89,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border-soft px-6 py-4 text-xs text-muted-soft md:px-10">
-        © 2026 RJ Tech. Todos los derechos reservados.
+        © 2026 RAM Informatica. Todos los derechos reservados.
       </div>
     </footer>
   );
@@ -120,12 +115,6 @@ function SocialIcon({ id }: { id: (typeof SOCIAL_LINKS)[number]["id"] }) {
       return (
         <svg {...common}>
           <path d="M13.5 22v-8.5H16l.5-3.5h-3V8.25c0-1 .3-1.75 1.75-1.75H16.5V3.4C16.1 3.35 14.9 3.25 13.5 3.25 10.6 3.25 8.75 5 8.75 8v2H6v3.5h2.75V22h4.75z" />
-        </svg>
-      );
-    case "tiktok":
-      return (
-        <svg {...common}>
-          <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.16 15.34 6.34 6.34 0 0 0 9.5 21.67a6.34 6.34 0 0 0 6.34-6.33V8.8a8.2 8.2 0 0 0 4.78 1.52V6.9a4.85 4.85 0 0 1-1.03-.21z" />
         </svg>
       );
     case "whatsapp":

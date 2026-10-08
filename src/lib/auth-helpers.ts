@@ -24,6 +24,6 @@ export function mapAuthUser(user: User | null): AuthUser | null {
   };
 }
 
-export function isRjtechAdmin(appMeta: Record<string, unknown> | undefined) {
-  return appMeta?.rjtech_role === "admin";
+export function isRamAdmin(appMeta: Record<string, unknown> | undefined) {
+  return appMeta?.ram_role === "admin";
 }

@@ -8,14 +8,14 @@ import { useCategoriesStore } from "@/store/categories-store";
 import { useStoreConfig } from "@/store/store-config";
 import { onAuthSessionChange, useAuthStore } from "@/store/auth-store";
 import { useAdminStore } from "@/store/admin-store";
-import { isRjtechAdmin } from "@/lib/auth-helpers";
+import { isRamAdmin } from "@/lib/auth-helpers";
 import type { User } from "@supabase/supabase-js";
 import { useEffect } from "react";
 
 function handleSession(user: User | null) {
   useAdminStore
     .getState()
-    .setFromUser(Boolean(user && isRjtechAdmin(user.app_metadata)));
+    .setFromUser(Boolean(user && isRamAdmin(user.app_metadata)));
   void useCartStore.getState().syncForUser(user?.id ?? null);
 }
 

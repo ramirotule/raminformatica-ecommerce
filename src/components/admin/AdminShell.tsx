@@ -95,7 +95,7 @@ function AdminSidebar({
         <BrandLogo size="xs" />
         <div className="min-w-0">
           <div className="truncate text-sm font-bold leading-tight text-foreground">
-            RJ Tech Admin
+            RAM Informatica Admin
           </div>
           <div className="text-[11px] text-muted">Panel de gestión</div>
         </div>
@@ -240,7 +240,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </button>
           <div className="min-w-0">
             <div className="truncate text-sm font-bold">{currentLabel}</div>
-            <div className="text-[11px] text-muted">RJ Tech Admin</div>
+            <div className="text-[11px] text-muted">RAM Informatica Admin</div>
           </div>
         </header>
 

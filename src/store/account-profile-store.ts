@@ -74,14 +74,14 @@ export const useAccountProfileStore = create<AccountProfileState>((set, get) => 
     const currency = useStoreConfig.getState().config.currency;
 
     const [profileRes, addrRes, ordersRes] = await Promise.all([
-      supabase.from("rjtech_profiles").select("*").eq("id", userId).maybeSingle(),
+      supabase.from("ram_profiles").select("*").eq("id", userId).maybeSingle(),
       supabase
-        .from("rjtech_addresses")
+        .from("ram_addresses")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: true }),
       supabase
-        .from("rjtech_orders")
+        .from("ram_orders")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
@@ -91,7 +91,7 @@ export const useAccountProfileStore = create<AccountProfileState>((set, get) => 
     let itemRows: OrderItemRow[] = [];
     if (orderIds.length) {
       const { data } = await supabase
-        .from("rjtech_order_items")
+        .from("ram_order_items")
         .select("*")
         .in("order_id", orderIds);
       itemRows = (data ?? []) as OrderItemRow[];
@@ -123,7 +123,7 @@ export const useAccountProfileStore = create<AccountProfileState>((set, get) => 
     if (!user) throw new Error("No hay sesión");
 
     const next = { ...get().profile, ...partial };
-    const { error } = await supabase.from("rjtech_profiles").upsert({
+    const { error } = await supabase.from("ram_profiles").upsert({
       id: user.id,
       name: next.name,
       email: next.email || user.email || "",
@@ -142,7 +142,7 @@ export const useAccountProfileStore = create<AccountProfileState>((set, get) => 
     if (!user) throw new Error("No hay sesión");
 
     const { data, error } = await supabase
-      .from("rjtech_addresses")
+      .from("ram_addresses")
       .insert({ ...input, user_id: user.id })
       .select("*")
       .single();
@@ -154,7 +154,7 @@ export const useAccountProfileStore = create<AccountProfileState>((set, get) => 
   updateAddress: async (id, input) => {
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_addresses")
+      .from("ram_addresses")
       .update(input)
       .eq("id", id)
       .select("*")
@@ -168,7 +168,7 @@ export const useAccountProfileStore = create<AccountProfileState>((set, get) => 
   },
   deleteAddress: async (id) => {
     const supabase = createClient();
-    const { error } = await supabase.from("rjtech_addresses").delete().eq("id", id);
+    const { error } = await supabase.from("ram_addresses").delete().eq("id", id);
     if (error) throw new Error(error.message);
     set((s) => ({ addresses: s.addresses.filter((a) => a.id !== id) }));
   },

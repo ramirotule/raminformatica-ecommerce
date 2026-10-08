@@ -1,6 +1,6 @@
-# RJ Tech Ecommerce
+# RAM Informatica Ecommerce
 
-Tienda online de RJ Tech (Santa Rosa, La Pampa) — Next.js + Supabase.
+Tienda online de RAM Informatica (Santa Rosa, La Pampa) — Next.js + Supabase.
 
 ## Stack
 
@@ -37,4 +37,4 @@ Ver `.env.example`:
 
 ## Admin
 
-Rutas bajo `/admin`. Requiere usuario de Supabase Auth con `app_metadata.rjtech_role = "admin"`.
+Rutas bajo `/admin`. Requiere usuario de Supabase Auth con `app_metadata.ram_role = "admin"`.

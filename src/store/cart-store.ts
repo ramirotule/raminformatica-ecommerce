@@ -25,7 +25,7 @@ type CartState = {
   total: () => number;
 };
 
-const GUEST_KEY = "rjtech-guest-cart";
+const GUEST_KEY = "ram-guest-cart";
 
 function readGuestCart(): CartItem[] {
   if (typeof window === "undefined") return [];
@@ -65,7 +65,7 @@ async function requireUserId(): Promise<string | null> {
 async function fetchDbCart(userId: string): Promise<CartItem[]> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("rjtech_cart_items")
+    .from("ram_cart_items")
     .select("product_id, qty")
     .eq("user_id", userId);
   if (error) throw new Error(error.message);
@@ -77,7 +77,7 @@ async function fetchDbCart(userId: string): Promise<CartItem[]> {
 
 async function upsertDbItem(userId: string, productId: number, qty: number) {
   const supabase = createClient();
-  const { error } = await supabase.from("rjtech_cart_items").upsert(
+  const { error } = await supabase.from("ram_cart_items").upsert(
     {
       user_id: userId,
       product_id: productId,
@@ -92,7 +92,7 @@ async function upsertDbItem(userId: string, productId: number, qty: number) {
 async function deleteDbItem(userId: string, productId: number) {
   const supabase = createClient();
   const { error } = await supabase
-    .from("rjtech_cart_items")
+    .from("ram_cart_items")
     .delete()
     .eq("user_id", userId)
     .eq("product_id", productId);
@@ -102,7 +102,7 @@ async function deleteDbItem(userId: string, productId: number) {
 async function clearDbCart(userId: string) {
   const supabase = createClient();
   const { error } = await supabase
-    .from("rjtech_cart_items")
+    .from("ram_cart_items")
     .delete()
     .eq("user_id", userId);
   if (error) throw new Error(error.message);

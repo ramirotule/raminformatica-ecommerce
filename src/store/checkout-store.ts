@@ -109,7 +109,7 @@ export const useCheckoutStore = create<CheckoutState>()(
           .join(", ");
 
         const { data: order, error } = await supabase
-          .from("rjtech_orders")
+          .from("ram_orders")
           .insert({
             user_id: user.id,
             order_number: orderNumber,
@@ -147,7 +147,7 @@ export const useCheckoutStore = create<CheckoutState>()(
         });
 
         const { error: itemsError } = await supabase
-          .from("rjtech_order_items")
+          .from("ram_order_items")
           .insert(lines);
 
         if (itemsError) {
@@ -162,7 +162,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       },
     }),
     {
-      name: "rjtech-checkout",
+      name: "ram-checkout",
       storage: createJSONStorage(() => sessionStorage),
       partialize: (s) => ({
         step: s.step,

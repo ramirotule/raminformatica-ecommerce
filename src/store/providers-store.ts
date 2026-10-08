@@ -36,7 +36,7 @@ export const useProvidersStore = create<ProvidersState>((set, get) => ({
     set({ loading: true });
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_providers")
+      .from("ram_providers")
       .select("*")
       .order("name", { ascending: true });
 
@@ -54,7 +54,7 @@ export const useProvidersStore = create<ProvidersState>((set, get) => ({
   addProvider: async (input) => {
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_providers")
+      .from("ram_providers")
       .insert(input)
       .select("*")
       .single();
@@ -70,7 +70,7 @@ export const useProvidersStore = create<ProvidersState>((set, get) => ({
   updateProvider: async (id, input) => {
     const supabase = createClient();
     const { data, error } = await supabase
-      .from("rjtech_providers")
+      .from("ram_providers")
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq("id", id)
       .select("*")
@@ -83,7 +83,7 @@ export const useProvidersStore = create<ProvidersState>((set, get) => ({
   },
   deleteProvider: async (id) => {
     const supabase = createClient();
-    const { error } = await supabase.from("rjtech_providers").delete().eq("id", id);
+    const { error } = await supabase.from("ram_providers").delete().eq("id", id);
     if (error) throw new Error(error.message);
     set((s) => ({ providers: s.providers.filter((p) => p.id !== id) }));
   },

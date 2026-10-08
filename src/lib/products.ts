@@ -260,7 +260,7 @@ export const products: Product[] = [
   {
     id: 9,
     name: "Drone Explorer 4K",
-    brand: "RJ Tech",
+    brand: "RAM Informática",
     category: "gadgets",
     subcategory: "",
     provider: "",
@@ -285,7 +285,7 @@ export const products: Product[] = [
   {
     id: 10,
     name: "Lentes Smart Vision X",
-    brand: "RJ Tech",
+    brand: "RAM Informática",
     category: "gadgets",
     subcategory: "",
     provider: "",
@@ -375,7 +375,7 @@ export const reviewsData = [
   {
     name: "Fede A.",
     rating: 5,
-    text: "Segunda compra en RJ Tech, siempre con stock real y sin sorpresas en el envío.",
+    text: "Segunda compra en RAM Informática, siempre con stock real y sin sorpresas en el envío.",
     date: "28 jul 2026",
   },
 ];

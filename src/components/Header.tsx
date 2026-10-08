@@ -32,9 +32,9 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-md">
       <div className="flex min-h-[104px] items-center gap-4 py-2.5 pr-4 pl-1.5 sm:gap-6 md:min-h-[120px] md:py-3 md:pr-10 md:pl-2">
-        <BrandLogo size="md" className="-ml-1 md:-ml-1.5" />
+        <BrandLogo size="md" />
 
-        <nav className="hidden items-center gap-0.5 md:flex xl:gap-1">
+        <nav className="hidden items-center gap-0.5 md:ml-5 md:flex xl:ml-8 xl:gap-1">
           <Link
             href="/"
             className={`rounded-md px-2.5 py-2 text-sm font-semibold no-underline hover:!no-underline xl:px-3 ${

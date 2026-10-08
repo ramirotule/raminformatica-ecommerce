@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Envíos — RJ Tech",
+  title: "Envios — RAM Informatica",
   description:
-    "Información sobre envíos: a cargo del comprador. RJ Tech no se responsabiliza por pérdida o rotura durante el transporte.",
+    "Informacion sobre envios: a cargo del comprador. RAM Informatica no se responsabiliza por perdida o rotura durante el transporte.",
 };
 
 export default function EnviosPage() {
@@ -45,7 +45,7 @@ export default function EnviosPage() {
           <p>
             Cuando el pedido sale de nuestro depósito,{" "}
             <strong className="text-foreground">
-              RJ Tech no se responsabiliza por pérdida, robo, demora, daño o
+              RAM Informatica no se responsabiliza por perdida, robo, demora, dano o
               rotura
             </strong>{" "}
             durante el trayecto. Los reclamos se gestionan con la transportista.

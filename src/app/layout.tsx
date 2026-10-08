@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RJ Tech — Tecnología al mejor precio",
+  title: "RAM Informatica — Tecnologia al mejor precio",
   description:
     "MacBooks, iPhone, Xiaomi, Motorola, drones, TVs y más. Stock real, precios claros y cuotas.",
   icons: {

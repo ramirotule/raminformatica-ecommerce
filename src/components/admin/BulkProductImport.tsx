@@ -47,7 +47,7 @@ export function BulkProductImport({ onClose, onImported }: Props) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "rjtech-productos-plantilla.xlsx";
+      a.download = "ram-productos-plantilla.xlsx";
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

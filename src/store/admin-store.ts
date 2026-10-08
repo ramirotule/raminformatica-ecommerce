@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
-import { isRjtechAdmin } from "@/lib/auth-helpers";
+import { isRamAdmin } from "@/lib/auth-helpers";
 import { useAuthStore } from "@/store/auth-store";
 
 type AdminState = {
@@ -26,7 +26,7 @@ export const useAdminStore = create<AdminState>((set) => ({
   init: async () => {
     const supabase = createClient();
     const { data } = await supabase.auth.getUser();
-    const ok = Boolean(data.user && isRjtechAdmin(data.user.app_metadata));
+    const ok = Boolean(data.user && isRamAdmin(data.user.app_metadata));
     set({ isAuthenticated: ok, hydrated: true });
   },
   login: async (email, password) => {
@@ -41,12 +41,12 @@ export const useAdminStore = create<AdminState>((set) => ({
 
     await supabase.auth.refreshSession();
     const { data: again } = await supabase.auth.getUser();
-    if (!again.user || !isRjtechAdmin(again.user.app_metadata)) {
+    if (!again.user || !isRamAdmin(again.user.app_metadata)) {
       await supabase.auth.signOut();
       useAuthStore.getState().setUserFromSession(null);
       return {
         ok: false,
-        error: "Esta cuenta no tiene permisos de administrador RJ Tech.",
+        error: "Esta cuenta no tiene permisos de administrador RAM Informatica.",
       };
     }
 
@@ -63,5 +63,5 @@ export const useAdminStore = create<AdminState>((set) => ({
 }));
 
 export const ADMIN_CREDENTIALS_HINT = {
-  email: "rjtech@gmail.com",
+  email: "raminformatik@gmail.com",
 };

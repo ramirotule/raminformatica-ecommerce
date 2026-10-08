@@ -62,7 +62,7 @@ export const useFxStore = create<FxState>()(
       },
     }),
     {
-      name: "rjtech-fx",
+      name: "ram-fx",
       partialize: (s) => ({
         displayCurrency: s.displayCurrency,
         blueVenta: s.blueVenta,

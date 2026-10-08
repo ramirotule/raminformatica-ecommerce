@@ -34,9 +34,9 @@ export function AdminLogin() {
           <div className="mb-4 flex justify-center">
             <BrandLogo size="md" />
           </div>
-          <h1 className="text-xl font-bold">Admin RJ Tech</h1>
+          <h1 className="text-xl font-bold">Admin RAM Informatica</h1>
           <p className="mt-1 text-sm text-muted">
-            Acceso con tu usuario de Supabase (rol admin RJ Tech)
+            Acceso con tu usuario de Supabase (rol admin RAM Informatica)
           </p>
         </div>
 

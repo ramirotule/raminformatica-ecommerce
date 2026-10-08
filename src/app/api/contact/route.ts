@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const CONTACT_TO = "rjtech.lp@gmail.com";
+const CONTACT_TO = "raminformatik@gmail.com";
 
 type Body = {
   name?: string;
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
   }
 
   const to = process.env.CONTACT_TO_EMAIL?.trim() || CONTACT_TO;
-  const mailSubject = `[RJ Tech] ${subject}`;
+  const mailSubject = `[RAM Informatica] ${subject}`;
   const text = `Nombre: ${name}\nEmail: ${email}\n\n${message}`;
   const origin = siteOrigin(req);
 
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
         to,
         from:
           process.env.CONTACT_FROM_EMAIL?.trim() ||
-          "RJ Tech <onboarding@resend.dev>",
+          "RAM Informatica <onboarding@resend.dev>",
         replyTo: email,
         subject: mailSubject,
         text,
