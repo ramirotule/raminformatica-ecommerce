@@ -1,25 +1,21 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { useEffect } from "react";
 
 /**
- * Archivos (misma convención que logo-dark / logo-light):
- * - favicon-dark.png  → R plateada (legible en pestaña oscura / Incógnito)
- * - favicon-light.png → R oscura (legible en pestaña clara)
+ * El favicon sigue el tema del navegador/sistema (prefers-color-scheme),
+ * no el toggle del sitio, porque la pestaña de Chrome usa ese tema.
+ * - favicon-dark.png  → R plateada (pestaña oscura)
+ * - favicon-light.png → R oscura (pestaña clara)
  */
-const FOR_DARK_UI = "/favicon-dark.png";
-const FOR_LIGHT_UI = "/favicon-light.png";
+const FOR_DARK_UI = "/favicon/favicon-dark.png";
+const FOR_LIGHT_UI = "/favicon/favicon-light.png";
 
 export function ThemeFavicon() {
-  const { theme } = useTheme();
-
   useEffect(() => {
-    // Solo el toggle explícito "light" usa la R oscura.
-    // system / dark / sin tema → plateada (Incógnito y Chrome oscuro).
-    const href = theme === "light" ? FOR_LIGHT_UI : FOR_DARK_UI;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
 
-    const apply = (rel: string, id: string) => {
+    const apply = (rel: string, id: string, href: string) => {
       let link = document.head.querySelector<HTMLLinkElement>(
         `link[data-rj-favicon="${id}"]`,
       );
@@ -34,15 +30,22 @@ export function ThemeFavicon() {
       if (link.href !== absolute) link.href = href;
     };
 
-    apply("icon", "icon");
-    apply("shortcut icon", "shortcut");
+    const update = () => {
+      const href = mql.matches ? FOR_DARK_UI : FOR_LIGHT_UI;
+      apply("icon", "icon", href);
+      apply("shortcut icon", "shortcut", href);
 
-    document.head
-      .querySelectorAll<HTMLLinkElement>(
-        'link[rel="icon"]:not([data-rj-favicon]), link[rel="shortcut icon"]:not([data-rj-favicon])',
-      )
-      .forEach((el) => el.remove());
-  }, [theme]);
+      document.head
+        .querySelectorAll<HTMLLinkElement>(
+          'link[rel="icon"]:not([data-rj-favicon]), link[rel="shortcut icon"]:not([data-rj-favicon])',
+        )
+        .forEach((el) => el.remove());
+    };
+
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
 
   return null;
 }

@@ -29,7 +29,7 @@ export function BrandLogo({ size = "md", className = "" }: Props) {
   useEffect(() => setMounted(true), []);
 
   const isDark = mounted && resolvedTheme === "dark";
-  const src = isDark ? "/logo-dark.jpg" : "/logo-light.jpg";
+  const src = isDark ? "/logo-dark.png" : "/logo-light.jpg";
   const dim = sizes[size];
 
   return (

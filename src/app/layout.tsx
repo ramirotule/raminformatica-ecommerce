@@ -23,15 +23,14 @@ export const metadata: Metadata = {
     "MacBooks, iPhone, Xiaomi, Motorola, drones, TVs y más. Stock real, precios claros y cuotas.",
   icons: {
     icon: [
-      // Default plateado: Incógnito / pestañas oscuras aunque el OS esté en light
-      { url: "/favicon-dark.png", type: "image/png" },
+      { url: "/favicon/favicon-light.png", type: "image/png" },
       {
-        url: "/favicon-light.png",
+        url: "/favicon/favicon-light.png",
         type: "image/png",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/favicon-dark.png",
+        url: "/favicon/favicon-dark.png",
         type: "image/png",
         media: "(prefers-color-scheme: dark)",
       },
