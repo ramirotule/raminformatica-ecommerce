@@ -369,14 +369,26 @@ export const reviewsData = [
   {
     name: "Lucía R.",
     rating: 4,
-    text: "Muy buena relación precio-calidad. Las cuotas sin interés hicieron la diferencia para comprarlo.",
+    text: "Muy buena relación precio-calidad. Estoy muy conforme con la compra, lo recomiendo.",
     date: "3 ago 2026",
   },
   {
     name: "Fede A.",
     rating: 5,
-    text: "Segunda compra en RAM Informática, siempre con stock real y sin sorpresas en el envío.",
+    text: "Segunda compra en RAM Informática, siempre buena atención y sin sorpresas en el envío.",
     date: "28 jul 2026",
+  },
+  {
+    name: "Nicolás G.",
+    rating: 5,
+    text: "Gracias Ramiro por tu excelente atención. Me asesoró en todo y el equipo llegó impecable.",
+    date: "20 jul 2026",
+  },
+  {
+    name: "Carolina S.",
+    rating: 5,
+    text: "Excelente atención, me respondieron rápido por WhatsApp y me ayudaron a elegir el mejor equipo.",
+    date: "14 jul 2026",
   },
 ];
 

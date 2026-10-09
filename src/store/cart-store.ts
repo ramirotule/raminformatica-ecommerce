@@ -148,8 +148,10 @@ export const useCartStore = create<CartState>((set, get) => ({
         syncing: false,
       });
     } catch {
+      // Sin tabla/DB: usamos lo que haya en este navegador.
       set({
-        items: userId ? get().items : readGuestCart(),
+        items:
+          userId && get().items.length ? get().items : readGuestCart(),
         userId,
         hydrated: true,
         syncing: false,
@@ -168,14 +170,18 @@ export const useCartStore = create<CartState>((set, get) => ({
 
     const existing = get().items.find((c) => c.id === id);
     const nextQty = (existing?.qty ?? 0) + qty;
-    await upsertDbItem(userId, id, nextQty);
-    set((s) => ({
-      userId,
-      items: mergeItems(
-        s.items.filter((c) => c.id !== id),
-        [{ id, qty: nextQty }],
-      ),
-    }));
+    const items = mergeItems(
+      get().items.filter((c) => c.id !== id),
+      [{ id, qty: nextQty }],
+    );
+    try {
+      await upsertDbItem(userId, id, nextQty);
+    } catch (err) {
+      // Si la base no responde, el carrito sigue funcionando en este navegador.
+      console.error("No se pudo guardar el carrito en la base:", err);
+      writeGuestCart(items);
+    }
+    set({ userId, items });
   },
 
   setQty: async (id, qty) => {
@@ -189,10 +195,16 @@ export const useCartStore = create<CartState>((set, get) => ({
       set({ items });
       return;
     }
-    await upsertDbItem(userId, id, next);
-    set((s) => ({
-      items: s.items.map((c) => (c.id === id ? { ...c, qty: next } : c)),
-    }));
+    const items = get().items.map((c) =>
+      c.id === id ? { ...c, qty: next } : c,
+    );
+    try {
+      await upsertDbItem(userId, id, next);
+    } catch (err) {
+      console.error("No se pudo guardar el carrito en la base:", err);
+      writeGuestCart(items);
+    }
+    set({ items });
   },
 
   changeQty: async (id, delta) => {
@@ -208,8 +220,14 @@ export const useCartStore = create<CartState>((set, get) => ({
       set({ items });
       return;
     }
-    await deleteDbItem(userId, id);
-    set((s) => ({ items: s.items.filter((c) => c.id !== id) }));
+    const items = get().items.filter((c) => c.id !== id);
+    try {
+      await deleteDbItem(userId, id);
+    } catch (err) {
+      console.error("No se pudo actualizar el carrito en la base:", err);
+      writeGuestCart(items);
+    }
+    set({ items });
   },
 
   clearCart: async () => {
@@ -219,7 +237,12 @@ export const useCartStore = create<CartState>((set, get) => ({
       set({ items: [] });
       return;
     }
-    await clearDbCart(userId);
+    try {
+      await clearDbCart(userId);
+    } catch (err) {
+      console.error("No se pudo vaciar el carrito en la base:", err);
+    }
+    clearGuestCart();
     set({ items: [] });
   },
 

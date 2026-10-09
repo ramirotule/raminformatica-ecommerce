@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Nosotros — RAM Informática",
   description:
-    "Somos RAM Informática, fanáticos de la tecnología en Santa Rosa, La Pampa. Stock real, precios claros y ganas de asesorarte.",
+    "Somos RAM Informática, fanáticos de la tecnología en Santa Rosa, La Pampa. Precios claros y ganas de asesorarte.",
 };
 
 export default function NosotrosPage() {
@@ -80,22 +80,23 @@ export default function NosotrosPage() {
           </h2>
           <div className="space-y-4 text-[15px] leading-relaxed text-body-text">
             <p>
-              RAM Informática no salió de una oficina de vidrio en Capital. Salimos de
-              acá: de Santa Rosa, La Pampa, donde si algo se rompe o no llega,
-              se nota. Por eso armamos un ecommerce con precios
-              claros y cero chamuyo barato.
+              RAM Informática nació en agosto de 2008 en Santa Rosa, La Pampa.
+              No salimos de una oficina de vidrio en Capital: salimos de acá,
+              de la calle pampeana, con ganas de que la buena tecnología esté
+              al alcance de todos y sin chamuyo barato.
             </p>
             <p>
-              Somos fanáticos de la tecnología de verdad: de probar, comparar,
-              pelear por el mejor precio y explicarte en criollo por qué ese
-              celular, notebook o tele es el que te conviene. Si no lo
-              usaríamos nosotros, no te lo recomendamos.
+              Durante más de 13 años tuvimos nuestro local a la calle, hasta
+              octubre de 2021. Ahí atendimos a cientos de clientes, probamos,
+              comparamos, peleamos precios y explicamos en criollo por qué ese
+              celular, notebook o tele era el que te convenía.
             </p>
             <p>
-              Entre el viento pampeano y las ganas de estar a la altura de
-              cualquier big store, construimos algo más cercano: una tech shop
-              con cara y nombre, que responde por chat y te acompaña después de
-              la compra.
+              Después de esa etapa cerramos las puertas del local, pero la
+              historia siguió: hoy vendemos de forma online a través de nuestro
+              ecommerce, con la misma buena onda y la misma energía de siempre.
+              Cambió el mostrador, no las ganas: seguimos respondiendo por chat
+              y acompañándote después de la compra, ahora a todo el país.
             </p>
           </div>
         </div>
@@ -116,8 +117,8 @@ export default function NosotrosPage() {
           <div className="grid grid-cols-1 gap-x-12 gap-y-10 md:grid-cols-3">
             {[
               {
-                title: "Stock real",
-                text: "Si está publicado, está. Preferimos decirte que se agotó a venderte humo con demoras eternas.",
+                title: "Precios claros",
+                text: "Publicamos cada precio de forma transparente y te explicamos todo antes de comprar, sin letra chica.",
               },
               {
                 title: "Asesoramiento honesto",

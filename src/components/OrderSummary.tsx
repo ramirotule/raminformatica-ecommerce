@@ -1,5 +1,6 @@
 "use client";
 
+import { ArsPrice } from "@/components/ArsPrice";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useCartStore } from "@/store/cart-store";
 
@@ -30,7 +31,10 @@ export function OrderSummary({ title = "Resumen", action }: Props) {
       <div className="mb-3.5 h-px bg-border" />
       <div className={`flex justify-between text-[17px] font-bold ${action ? "mb-5" : ""}`}>
         <span>Total</span>
-        <span>{formatPrice(total)}</span>
+        <span className="text-right">
+          {formatPrice(total)}
+          <ArsPrice amount={total} className="text-[12.5px]" />
+        </span>
       </div>
       {action}
     </div>

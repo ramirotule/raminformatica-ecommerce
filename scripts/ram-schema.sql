@@ -460,3 +460,34 @@ create policy "ram_subcategories_admin_delete" on public.ram_subcategories
 
 grant select on public.ram_subcategories to anon, authenticated;
 grant insert, update, delete on public.ram_subcategories to authenticated;
+
+-- Carrito de usuarios logueados
+create table if not exists public.ram_cart_items (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  product_id bigint not null references public.ram_products (id) on delete cascade,
+  qty integer not null default 1 check (qty > 0),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, product_id)
+);
+
+alter table public.ram_cart_items enable row level security;
+
+drop policy if exists "ram_cart_select_own" on public.ram_cart_items;
+create policy "ram_cart_select_own" on public.ram_cart_items
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "ram_cart_insert_own" on public.ram_cart_items;
+create policy "ram_cart_insert_own" on public.ram_cart_items
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "ram_cart_update_own" on public.ram_cart_items;
+create policy "ram_cart_update_own" on public.ram_cart_items
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "ram_cart_delete_own" on public.ram_cart_items;
+create policy "ram_cart_delete_own" on public.ram_cart_items
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on public.ram_cart_items to authenticated;

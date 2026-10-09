@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ShareButton } from "@/components/ShareButton";
+import { ArsPrice } from "@/components/ArsPrice";
 import { productMeta, starsFor } from "@/lib/format";
 import {
   getRelatedProducts,
@@ -37,7 +38,7 @@ export default function ProductoPage() {
   const categoriaFromUrl = slug.length >= 2 ? slug[0] : null;
   const idFromUrl = slug.length >= 2 ? slug[1] : slug[0];
 
-  const { currency, toDisplay } = useCurrency();
+  const { formatPrice } = useCurrency();
   const products = useCatalogStore((s) => s.products);
   const hydrated = useCatalogStore((s) => s.hydrated);
   const categories = useCategoriesStore((s) => s.categories);
@@ -79,7 +80,7 @@ export default function ProductoPage() {
     );
   }
 
-  const meta = productMeta(product, currency, toDisplay);
+  const meta = productMeta(product, formatPrice);
   const related = getRelatedProducts(product, 4, products);
   const categoryName =
     categories.find((c) => c.id === product.category)?.name ??
@@ -166,7 +167,7 @@ export default function ProductoPage() {
             </div>
           )}
 
-          <div className="mb-1.5 flex items-baseline gap-3">
+          <div className="flex items-baseline gap-3">
             <div className="text-[30px] font-bold">{meta.fmtPrice}</div>
             {meta.fmtOldPrice && (
               <>
@@ -179,14 +180,17 @@ export default function ProductoPage() {
               </>
             )}
           </div>
-          <div
-            className={`mb-[22px] inline-block rounded-[7px] px-3 py-1.5 text-[12.5px] font-bold ${
-              meta.inStock
-                ? "bg-success-soft text-success"
-                : "bg-danger-soft text-sale"
-            }`}
-          >
-            {meta.label}
+          <ArsPrice amount={product.price} className="mb-1.5 text-sm" />
+          <div className="mb-[22px] flex flex-wrap items-center gap-2">
+            <div
+              className={`inline-block rounded-[7px] px-3 py-1.5 text-[12.5px] font-bold ${
+                meta.inStock
+                  ? "bg-success-soft text-success"
+                  : "bg-danger-soft text-sale"
+              }`}
+            >
+              {meta.label}
+            </div>
           </div>
           <div className="mb-[22px] h-px bg-border" />
 
@@ -227,6 +231,12 @@ export default function ProductoPage() {
                 >
                   Comprar ahora
                 </button>
+                <Link
+                  href={`/simulador?producto=${encodeURIComponent(String(product.id))}`}
+                  className="shrink-0 rounded-[9px] border border-primary bg-surface px-5 py-3 text-[14px] font-bold text-primary no-underline hover:!no-underline"
+                >
+                  Simular financiación
+                </Link>
                 <ShareButton title={product.name} className="shrink-0" />
               </div>
             </>

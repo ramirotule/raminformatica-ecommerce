@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
-import { CurrencyToggle } from "@/components/CurrencyToggle";
+import { FxRateLoader } from "@/components/FxRateLoader";
 import { HeaderSearch } from "@/components/HeaderSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuthStore } from "@/store/auth-store";
@@ -27,6 +27,7 @@ export function Header() {
   const isCatalog = pathname.startsWith("/catalogo");
   const isMarcas = pathname.startsWith("/marcas");
   const isNosotros = pathname.startsWith("/nosotros");
+  const isSimulador = pathname.startsWith("/simulador");
   const isContacto = pathname.startsWith("/contacto");
 
   return (
@@ -68,6 +69,14 @@ export function Header() {
             Nosotros
           </Link>
           <Link
+            href="/simulador"
+            className={`rounded-md px-2.5 py-2 text-sm font-semibold no-underline hover:!no-underline xl:px-3 ${
+              isSimulador ? "text-primary" : "text-foreground"
+            }`}
+          >
+            Simulador
+          </Link>
+          <Link
             href="/contacto"
             className={`rounded-md px-2.5 py-2 text-sm font-semibold no-underline hover:!no-underline xl:px-3 ${
               isContacto ? "text-primary" : "text-foreground"
@@ -79,10 +88,10 @@ export function Header() {
 
         <HeaderSearch />
 
-        <div className="flex-1" />
+        <div className="ml-auto" />
 
         <div className="flex flex-col items-end gap-1.5">
-          <CurrencyToggle />
+          <FxRateLoader />
           <div className="flex items-center gap-1 sm:gap-2">
             <Link
               href="/cuenta"

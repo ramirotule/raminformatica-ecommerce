@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "RAM Informatica — Tecnologia al mejor precio",
   description:
-    "MacBooks, iPhone, Xiaomi, Motorola, drones, TVs y más. Stock real, precios claros y cuotas.",
+    "MacBooks, iPhone, Xiaomi, Motorola, drones, TVs y más. Precios claros y buena atención.",
   icons: {
     icon: [
       { url: "/favicon/favicon-light.png", type: "image/png" },

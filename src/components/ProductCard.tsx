@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { Product } from "@/lib/products";
 import { productHref } from "@/lib/products";
+import { ArsPrice } from "@/components/ArsPrice";
 import { productMeta } from "@/lib/format";
 import { useCurrency } from "@/hooks/useCurrency";
 import { ProductImage } from "./ProductImage";
@@ -14,8 +15,8 @@ type Props = {
 };
 
 export function ProductCard({ product, variant = "default" }: Props) {
-  const { currency, toDisplay } = useCurrency();
-  const meta = productMeta(product, currency, toDisplay);
+  const { formatPrice } = useCurrency();
+  const meta = productMeta(product, formatPrice);
   const isCompact = variant === "compact";
   const colors = product.colors ?? [];
 
@@ -60,17 +61,23 @@ export function ProductCard({ product, variant = "default" }: Props) {
           </div>
         )}
         <div className="flex-1" />
-        <div className="flex items-baseline gap-2">
-          <div
-            className={`font-bold text-foreground ${isCompact ? "text-[15px]" : "text-lg"}`}
-          >
-            {meta.fmtPrice}
-          </div>
-          {!isCompact && meta.fmtOldPrice && (
-            <div className="text-[13px] text-muted-soft line-through">
-              {meta.fmtOldPrice}
+        <div>
+          <div className="flex items-baseline gap-2">
+            <div
+              className={`font-bold text-foreground ${isCompact ? "text-[15px]" : "text-lg"}`}
+            >
+              {meta.fmtPrice}
             </div>
-          )}
+            {!isCompact && meta.fmtOldPrice && (
+              <div className="text-[13px] text-muted-soft line-through">
+                {meta.fmtOldPrice}
+              </div>
+            )}
+          </div>
+          <ArsPrice
+            amount={product.price}
+            className={isCompact ? "text-[11px]" : "text-[12.5px]"}
+          />
         </div>
         {!isCompact && (
           <div

@@ -27,11 +27,8 @@ export default function ContactoPage() {
       <div className="grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-start md:gap-14">
         <div className="space-y-5 text-[14.5px] leading-relaxed text-body-text">
           <p>
-            Completá el formulario y te llega un mail a{" "}
-            <span className="font-semibold text-foreground">
-              raminformatik@gmail.com
-            </span>
-            . Si preferis chat, escribinos por WhatsApp al 2954227622.
+            Completá el formulario para mandarnos un mail o hacé clic en el
+            botón de abajo para escribirnos por WhatsApp.
           </p>
           <ContactWhatsAppCard />
         </div>

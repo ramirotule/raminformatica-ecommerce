@@ -71,20 +71,17 @@ export default function HomePage() {
       <section className="mb-11 flex flex-col items-start justify-between gap-6 rounded-[14px] bg-primary-soft px-7 py-7 md:flex-row md:items-center md:px-9">
         <div>
           <div className="mb-1 text-lg font-bold">
-            {config.installmentsEnabled
-              ? `Hasta ${config.maxInstallments} cuotas sin interés`
-              : "Financiación disponible"}
+            ¿Querés pagar en cuotas?
           </div>
           <div className="text-sm text-body-text">
-            {config.announcement ||
-              "En MacBooks, celulares y TVs seleccionados. Elegí el plan en el checkout."}
+            Entrá al simulador y calculá el costo de cada plan.
           </div>
         </div>
         <Link
-          href="/catalogo"
+          href="/simulador"
           className="shrink-0 rounded-[9px] bg-primary px-[22px] py-3 text-sm font-semibold whitespace-nowrap text-white no-underline hover:bg-primary-dark hover:no-underline!"
         >
-          Ver productos en cuotas
+          Ir al simulador
         </Link>
       </section>
 

@@ -73,19 +73,16 @@ export function stockInfo(product: Product) {
 
 export function productMeta(
   product: Product,
-  currency: CurrencyCode = "USD",
-  /** Convierte el monto base (USD tienda) a la moneda de visualización. */
-  convert: (amount: number) => number = (n) => n,
+  /** Formatea un monto base (USD tienda) para mostrarlo al visitante. */
+  fmt: (amount: number) => string = (n) => formatPrice(n, "USD"),
 ) {
   const discount = discountPct(product);
   const stock = stockInfo(product);
   return {
     categoryLabel: categoryLabels[product.category],
     stars: starsFor(product.rating),
-    fmtPrice: formatPrice(convert(product.price), currency),
-    fmtOldPrice: product.oldPrice
-      ? formatPrice(convert(product.oldPrice), currency)
-      : null,
+    fmtPrice: fmt(product.price),
+    fmtOldPrice: product.oldPrice ? fmt(product.oldPrice) : null,
     discountPct: discount,
     ...stock,
   };

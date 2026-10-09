@@ -2,6 +2,7 @@
 
 import {
   currencyPrefix,
+  formatAmount,
   formatPrice as formatPriceRaw,
   normalizeCurrency,
   type CurrencyCode,
@@ -28,33 +29,32 @@ export function convertAmount(
   return Math.round(amount);
 }
 
-/** Moneda de visualización del visitante + conversión con blue venta. */
+/**
+ * Los precios se muestran siempre en US$; `formatArs` da el equivalente en
+ * pesos según dólar blue venta para mostrarlo aparte, más chico.
+ */
 export function useCurrency() {
-  const storeCurrency = normalizeCurrency(
-    useStoreConfig((s) => s.config.currency),
-  );
-  const displayCurrency = useFxStore((s) => s.displayCurrency);
   const blueVenta = useFxStore((s) => s.blueVenta);
-  const currency = normalizeCurrency(displayCurrency);
+  const currency: CurrencyCode = "USD";
 
-  // Precios de catálogo = USD; en $ se multiplica por blue venta
-  const toDisplay = (n: number) => {
-    if (currency === "USD") return Math.round(n);
-    if (currency === "ARS" && blueVenta && blueVenta > 0) {
-      return Math.round(n * blueVenta);
-    }
-    return Math.round(n);
-  };
+  const toDisplay = (n: number) => Math.round(n);
+
+  const formatPrice = (n: number) => formatPriceRaw(toDisplay(n), currency);
+
+  /** Equivalente en pesos ("$AR 2.310.000"), o null si no hay cotización. */
+  const formatArs = (n: number) =>
+    blueVenta && blueVenta > 0 ? `$ ${formatAmount(n * blueVenta)}` : null;
 
   return {
     /** Moneda en la que se muestran los precios al visitante. */
     currency,
     /** Moneda base de los precios guardados en el catálogo. */
-    storeCurrency,
+    storeCurrency: currency,
     blueVenta,
     prefix: currencyPrefix(currency),
     toDisplay,
-    formatPrice: (n: number) => formatPriceRaw(toDisplay(n), currency),
+    formatPrice,
+    formatArs,
   };
 }
 

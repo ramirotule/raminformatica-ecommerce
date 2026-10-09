@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ArsPrice } from "@/components/ArsPrice";
 import { ProductImage } from "@/components/ProductImage";
 import { useCurrency } from "@/hooks/useCurrency";
 import {
@@ -100,7 +101,7 @@ export function HeaderSearch() {
   };
 
   return (
-    <div ref={rootRef} className="relative ml-2 hidden max-w-[440px] flex-1 md:block">
+    <div ref={rootRef} className="relative ml-2 hidden max-w-[520px] min-w-[260px] flex-1 md:block">
       <form onSubmit={onSubmit} role="search">
         <input
           ref={inputRef}
@@ -112,7 +113,7 @@ export function HeaderSearch() {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="Buscar productos, marcas, tags..."
+          placeholder="Buscar productos, marcas..."
           autoComplete="off"
           aria-autocomplete="list"
           aria-controls={showPanel ? listId : undefined}
@@ -125,7 +126,7 @@ export function HeaderSearch() {
         <div
           id={listId}
           role="listbox"
-          className="absolute top-[calc(100%+8px)] right-0 left-0 z-50 overflow-hidden rounded-xl border border-border bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4)]"
+          className="absolute top-[calc(100%+8px)] left-0 z-50 w-[max(100%,440px)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.14)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.4)]"
         >
           {results.length === 0 ? (
             <div className="px-4 py-5 text-sm text-muted">
@@ -162,8 +163,11 @@ export function HeaderSearch() {
                             : ""}
                         </div>
                       </div>
-                      <div className="shrink-0 text-[13px] font-bold tabular-nums text-foreground">
-                        {formatPrice(product.price)}
+                      <div className="shrink-0 text-right">
+                        <div className="text-[13px] font-bold tabular-nums text-foreground">
+                          {formatPrice(product.price)}
+                        </div>
+                        <ArsPrice amount={product.price} className="text-[11px]" />
                       </div>
                     </Link>
                   </li>

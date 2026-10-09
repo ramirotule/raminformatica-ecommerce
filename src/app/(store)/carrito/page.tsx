@@ -4,6 +4,7 @@ import Link from "next/link";
 import { OrderSummary } from "@/components/OrderSummary";
 import { ProductImage } from "@/components/ProductImage";
 import { QuantitySelector } from "@/components/QuantitySelector";
+import { ArsPrice } from "@/components/ArsPrice";
 import { productMeta } from "@/lib/format";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useCartStore } from "@/store/cart-store";
@@ -11,7 +12,7 @@ import { useCatalogStore } from "@/store/catalog-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 
 export default function CarritoPage() {
-  const { currency, formatPrice, toDisplay } = useCurrency();
+  const { formatPrice } = useCurrency();
   const items = useCartStore((s) => s.items);
   const products = useCatalogStore((s) => s.products);
   const changeQty = useCartStore((s) => s.changeQty);
@@ -38,7 +39,7 @@ export default function CarritoPage() {
             {items.map((c) => {
               const product = products.find((p) => p.id === c.id);
               if (!product) return null;
-              const meta = productMeta(product, currency, toDisplay);
+              const meta = productMeta(product, formatPrice);
               return (
                 <div
                   key={c.id}
@@ -66,8 +67,11 @@ export default function CarritoPage() {
                     onDec={() => void changeQty(c.id, -1)}
                     onInc={() => void changeQty(c.id, 1)}
                   />
-                  <div className="w-[100px] text-right text-[15px] font-bold">
-                    {formatPrice(product.price * c.qty)}
+                  <div className="w-[140px] text-right">
+                    <div className="text-[15px] font-bold">
+                      {formatPrice(product.price * c.qty)}
+                    </div>
+                    <ArsPrice amount={product.price * c.qty} className="text-[11.5px]" />
                   </div>
                   <button
                     type="button"
