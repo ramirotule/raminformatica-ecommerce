@@ -260,7 +260,7 @@ function Simulador() {
                   </div>
                   <div className="text-[12.5px] text-muted">
                     Total {money(total)}
-                    {plan.surcharge > 0 ? ` · recargo ${plan.surcharge}%` : ""}
+                    {plan.surcharge > 0 ? ` · recargo ${plan.surcharge.toFixed(2).replace(".", ",")}%` : ""}
                   </div>
                 </div>
                 <div className="text-right text-lg font-bold text-primary">
