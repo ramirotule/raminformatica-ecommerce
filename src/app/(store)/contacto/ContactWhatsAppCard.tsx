@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 import { whatsappHref } from "@/lib/social";
 
 const PREFILL =
@@ -7,6 +9,7 @@ const PREFILL =
 const CONTACT_PHONE = "5492954227622";
 
 export function ContactWhatsAppCard() {
+  const pathname = usePathname();
   const href = whatsappHref(CONTACT_PHONE, PREFILL);
 
   return (
@@ -14,6 +17,12 @@ export function ContactWhatsAppCard() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() =>
+        trackEvent("whatsapp_click", {
+          source: "contact_card",
+          page: pathname ?? "/contacto",
+        })
+      }
       className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface px-5 py-4 no-underline transition-colors hover:border-[#26D366] hover:bg-[#26D366]/10 hover:!no-underline"
     >
       <span className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full bg-[#26D366] text-white shadow-[0_6px_16px_rgba(38,211,102,0.35)]">

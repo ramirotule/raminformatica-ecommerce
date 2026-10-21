@@ -11,6 +11,7 @@ import { MultiImageUploader } from "@/components/MultiImageUploader";
 import { MoneyInput } from "@/components/MoneyInput";
 import { ProductImage } from "@/components/ProductImage";
 import { ColorSelect } from "@/components/ColorSelect";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { TagInput } from "@/components/TagInput";
 import { useStoreCurrency } from "@/hooks/useCurrency";
 import { useDialog } from "@/components/DialogProvider";
@@ -22,7 +23,10 @@ import {
 import { swatchForColor } from "@/lib/product-colors";
 import { useCatalogStore } from "@/store/catalog-store";
 import { useBrandsStore } from "@/store/brands-store";
-import { useCategoriesStore } from "@/store/categories-store";
+import {
+  slugifyCategoryId,
+  useCategoriesStore,
+} from "@/store/categories-store";
 import { useSubcategoriesStore } from "@/store/subcategories-store";
 import { useProvidersStore } from "@/store/providers-store";
 import { useStoreConfig } from "@/store/store-config";
@@ -32,6 +36,7 @@ import {
   salePriceFromCost,
   type CurrencyCode,
 } from "@/lib/format";
+import { richTextToPlain, toRichTextHtml } from "@/lib/rich-text";
 
 const inputClass =
   "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary";
@@ -61,13 +66,6 @@ const STORAGE_OPTIONS = [
   { value: "1 TB", label: "1 TB" },
 ];
 
-const INSTALLMENT_OPTIONS: { value: string; label: string }[] = [
-  { value: "Hasta 3 cuotas sin interés", label: "Hasta 3 cuotas sin interés" },
-  { value: "Hasta 6 cuotas sin interés", label: "Hasta 6 cuotas sin interés" },
-  { value: "Hasta 12 cuotas sin interés", label: "Hasta 12 cuotas sin interés" },
-  { value: "Precio de contado", label: "Precio de contado" },
-];
-
 const emptyForm = {
   name: "",
   brand: "",
@@ -76,7 +74,7 @@ const emptyForm = {
   provider: "",
   costPrice: null as number | null,
   price: null as number | null,
-  stock: "",
+  stock: "1",
   installments: "Hasta 6 cuotas sin interés",
   description: "",
   tags: [] as string[],
@@ -103,6 +101,14 @@ function applyNameText(
   return position === "before" ? `${t} ${name}` : `${name} ${t}`;
 }
 
+function toTitleCase(value: string): string {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .replace(/\b([a-záéíóúñü])/g, (m) => m.toUpperCase());
+}
+
 type Panel = "none" | "form" | "bulk" | "images" | "prices" | "supplier";
 
 export default function AdminProductosPage() {
@@ -126,6 +132,7 @@ export default function AdminProductosPage() {
     [storeCategories],
   );
   const storeSubcategories = useSubcategoriesStore((s) => s.subcategories);
+  const addSubcategory = useSubcategoriesStore((s) => s.addSubcategory);
   const subcategories = useMemo(
     () =>
       [...storeSubcategories].sort((a, b) =>
@@ -135,6 +142,7 @@ export default function AdminProductosPage() {
   );
   const providers = useProvidersStore((s) => s.providers);
   const ensureProvider = useProvidersStore((s) => s.ensureProvider);
+  const addCategory = useCategoriesStore((s) => s.addCategory);
 
   const [priceCurrency, setPriceCurrency] = useState<CurrencyCode>(storeCurrency);
   const prefix = currencyPrefix(priceCurrency);
@@ -181,7 +189,7 @@ export default function AdminProductosPage() {
         return (
           p.name.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
+          richTextToPlain(p.description).toLowerCase().includes(q) ||
           categoryLabels[p.category]?.toLowerCase().includes(q) ||
           categories.some(
             (c) =>
@@ -406,20 +414,6 @@ export default function AdminProductosPage() {
     setBulkMenuOpen(false);
     setBulkPanel(panel);
   };
-  const installmentOptions = useMemo(() => {
-    const base = INSTALLMENT_OPTIONS.map((o) => ({ ...o }));
-    if (
-      form.installments &&
-      !base.some((o) => o.value === form.installments)
-    ) {
-      base.unshift({
-        value: form.installments,
-        label: form.installments,
-      });
-    }
-    return base;
-  }, [form.installments]);
-
   const closeForm = useCallback(() => {
     setPanel("none");
     setEditing(null);
@@ -445,7 +439,7 @@ export default function AdminProductosPage() {
       price: p.price,
       stock: String(p.stock),
       installments: p.installments,
-      description: p.description,
+      description: toRichTextHtml(p.description),
       tags: [...(p.tags ?? [])],
       colors: [...(p.colors ?? [])],
       ram: p.ram ?? "",
@@ -482,12 +476,89 @@ export default function AdminProductosPage() {
     setPanel("images");
   };
 
+  const onCategoryFormChange = (rawValue: string) => {
+    const nextValue = rawValue.trim();
+    if (!nextValue) return;
+
+    const existingById = categories.find((c) => c.id === nextValue);
+    const existingByName = categories.find(
+      (c) => c.name.toLowerCase() === nextValue.toLowerCase(),
+    );
+    const existing = existingById ?? existingByName;
+    if (existing) {
+      setForm((prev) => ({
+        ...prev,
+        category: existing.id,
+        subcategory: subcategories.some(
+          (x) =>
+            x.categoryId === existing.id && x.name === prev.subcategory,
+        )
+          ? prev.subcategory
+          : "",
+      }));
+      return;
+    }
+
+    void (async () => {
+      try {
+        const created = await addCategory({
+          id: slugifyCategoryId(nextValue),
+          name: toTitleCase(nextValue),
+        });
+        setForm((prev) => ({
+          ...prev,
+          category: created.id,
+          subcategory: "",
+        }));
+      } catch (err) {
+        void notice({
+          title: "No se pudo crear la categoría",
+          message: err instanceof Error ? err.message : "Error al crear categoría",
+        });
+      }
+    })();
+  };
+
+  const onSubcategoryFormChange = (rawValue: string) => {
+    const nextValue = rawValue.trim();
+    if (!nextValue) {
+      setForm((prev) => ({ ...prev, subcategory: "" }));
+      return;
+    }
+
+    const existing = subcategories.find(
+      (x) =>
+        x.categoryId === form.category &&
+        x.name.toLowerCase() === nextValue.toLowerCase(),
+    );
+    if (existing) {
+      setForm((prev) => ({ ...prev, subcategory: existing.name }));
+      return;
+    }
+
+    void (async () => {
+      try {
+        const created = await addSubcategory({
+          categoryId: form.category,
+          name: toTitleCase(nextValue),
+        });
+        setForm((prev) => ({ ...prev, subcategory: created.name }));
+      } catch (err) {
+        void notice({
+          title: "No se pudo crear la subcategoría",
+          message:
+            err instanceof Error ? err.message : "Error al crear subcategoría",
+        });
+      }
+    })();
+  };
+
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const brandName = form.brand.trim();
     const providerName = form.provider.trim();
     const payload = {
-      name: form.name.trim(),
+      name: toTitleCase(form.name),
       brand: brandName,
       category: form.category,
       subcategory: form.subcategory.trim(),
@@ -497,7 +568,7 @@ export default function AdminProductosPage() {
       oldPrice: null,
       stock: Number(form.stock) || 0,
       installments: form.installments.trim(),
-      description: form.description.trim(),
+      description: toRichTextHtml(form.description),
       tags: form.tags,
       colors: form.colors,
       ram: form.ram.trim(),
@@ -733,6 +804,12 @@ export default function AdminProductosPage() {
               placeholder="Nombre"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onBlur={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  name: toTitleCase(e.target.value),
+                }))
+              }
               required
             />
             <ComboSelect
@@ -749,30 +826,23 @@ export default function AdminProductosPage() {
             <ComboSelect
               value={form.category}
               options={categoryOptions}
-              onChange={(category) =>
-                setForm({
-                  ...form,
-                  category,
-                  subcategory: subcategories.some(
-                    (x) =>
-                      x.categoryId === category && x.name === form.subcategory,
-                  )
-                    ? form.subcategory
-                    : "",
-                })
-              }
+              onChange={onCategoryFormChange}
               placeholder="Categoría"
               searchPlaceholder="Buscar categoría…"
               searchable
+              creatable
+              createLabel={(q) => `Agregar categoría “${q}”`}
               fullWidth
             />
             <ComboSelect
               value={form.subcategory}
               options={subcategoryOptions}
-              onChange={(subcategory) => setForm({ ...form, subcategory })}
+              onChange={onSubcategoryFormChange}
               placeholder="Subcategoría"
               searchPlaceholder="Buscar subcategoría…"
               searchable
+              creatable
+              createLabel={(q) => `Agregar subcategoría “${q}”`}
               fullWidth
             />
             <ComboSelect
@@ -802,7 +872,13 @@ export default function AdminProductosPage() {
               currencyEditable
               onCurrencyChange={onPriceCurrencyChange}
               value={form.costPrice}
-              onChange={(costPrice) => setForm({ ...form, costPrice })}
+              onChange={(costPrice) =>
+                setForm((prev) => ({
+                  ...prev,
+                  costPrice,
+                  price: salePriceFromCost(costPrice, prev.price ?? 0),
+                }))
+              }
               allowEmpty
             />
             <MoneyInput
@@ -834,17 +910,6 @@ export default function AdminProductosPage() {
                 />
                 Destacado
               </label>
-            </div>
-            <div className="md:col-span-2">
-              <ComboSelect
-                value={form.installments}
-                options={installmentOptions}
-                onChange={(installments) => setForm({ ...form, installments })}
-                placeholder="Cuotas / financiamiento"
-                searchPlaceholder="Buscar opción de cuotas…"
-                searchable
-                fullWidth
-              />
             </div>
             <div className="md:col-span-2">
               <MultiImageUploader
@@ -928,14 +993,15 @@ export default function AdminProductosPage() {
               />
             </div>
 
-            <textarea
-              className={`${inputClass} min-h-[90px] md:col-span-2`}
-              placeholder="Descripción (opcional)"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
+            <div className="md:col-span-2">
+              <RichTextEditor
+                value={form.description}
+                onChange={(description) =>
+                  setForm((prev) => ({ ...prev, description }))
+                }
+                placeholder="Descripción (opcional). Podés pegar texto con formato."
+              />
+            </div>
           </div>
           <div className="mt-4 flex gap-2">
             <button

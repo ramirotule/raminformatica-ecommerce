@@ -241,6 +241,41 @@ a:hover {
   border: none;
 }
 
+.rich-description p,
+.rich-description div {
+  margin: 0 0 0.85rem;
+}
+
+.rich-description ul,
+.rich-description ol {
+  margin: 0 0 0.95rem 1.25rem;
+}
+
+.rich-description li {
+  margin: 0.25rem 0;
+}
+
+.rich-description h1,
+.rich-description h2,
+.rich-description h3,
+.rich-description h4 {
+  margin: 1rem 0 0.65rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.rich-description blockquote {
+  margin: 0.9rem 0;
+  border-left: 3px solid var(--border);
+  padding-left: 0.8rem;
+  color: var(--muted);
+}
+
+.rich-description a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wa-float-ring,
   .wa-float-ring-delay {

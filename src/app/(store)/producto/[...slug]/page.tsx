@@ -10,6 +10,8 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { ShareButton } from "@/components/ShareButton";
 import { ArsPrice } from "@/components/ArsPrice";
 import { productMeta, starsFor } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics";
+import { toRichTextHtml } from "@/lib/rich-text";
 import {
   getRelatedProducts,
   productHref,
@@ -82,6 +84,7 @@ export default function ProductoPage() {
 
   const meta = productMeta(product, formatPrice);
   const related = getRelatedProducts(product, 4, products);
+  const descriptionHtml = toRichTextHtml(product.description);
   const categoryName =
     categories.find((c) => c.id === product.category)?.name ??
     meta.categoryLabel ??
@@ -100,9 +103,23 @@ export default function ProductoPage() {
   ];
 
   const onAddToCart = () => {
+    trackEvent("add_to_cart", {
+      product_id: product.id,
+      product_name: product.name,
+      category: product.category,
+      quantity: qty,
+      unit_price: product.price,
+    });
     void addItem(product.id, qty);
   };
   const onBuyNow = () => {
+    trackEvent("buy_now_click", {
+      product_id: product.id,
+      product_name: product.name,
+      category: product.category,
+      quantity: qty,
+      unit_price: product.price,
+    });
     void addItem(product.id, qty).then(() => {
       resetCheckout();
       router.push("/checkout");
@@ -233,6 +250,13 @@ export default function ProductoPage() {
                 </button>
                 <Link
                   href={`/simulador?producto=${encodeURIComponent(String(product.id))}`}
+                  onClick={() =>
+                    trackEvent("simulator_open_from_product", {
+                      product_id: product.id,
+                      product_name: product.name,
+                      category: product.category,
+                    })
+                  }
                   className="shrink-0 rounded-[9px] border border-primary bg-surface px-5 py-3 text-[14px] font-bold text-primary no-underline hover:!no-underline"
                 >
                   Simular financiación
@@ -264,9 +288,10 @@ export default function ProductoPage() {
       <div className="grid grid-cols-1 gap-12 py-7 lg:grid-cols-[1fr_minmax(520px,580px)]">
         <div>
           <h3 className="mb-3 text-base font-bold">Descripción</h3>
-          <p className="mb-6 text-[14.5px] leading-relaxed text-body-text">
-            {product.description}
-          </p>
+          <div
+            className="rich-description mb-6 text-[14.5px] leading-relaxed text-body-text"
+            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+          />
           <h3 className="mb-3 text-base font-bold">Especificaciones</h3>
           <div className="overflow-hidden rounded-[10px] border border-border">
             {specs.map((s, i) => (

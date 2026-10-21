@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { FxRateLoader } from "@/components/FxRateLoader";
 import { HeaderSearch } from "@/components/HeaderSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { trackEvent } from "@/lib/analytics";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 
@@ -119,6 +120,12 @@ export function Header() {
             <Link
               href="/carrito"
               aria-label={`Carrito${count > 0 ? `, ${count} productos` : ""}`}
+              onClick={() =>
+                trackEvent("open_cart", {
+                  cart_count: count,
+                  page: pathname ?? "",
+                })
+              }
               className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground no-underline transition-colors hover:bg-accent-soft hover:!no-underline"
             >
               <svg

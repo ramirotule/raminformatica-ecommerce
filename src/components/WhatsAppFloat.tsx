@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 import { whatsappHref } from "@/lib/social";
 
 const PREFILL =
@@ -24,6 +25,12 @@ export function WhatsAppFloat() {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() =>
+        trackEvent("whatsapp_click", {
+          source: "floating_button",
+          page: pathname ?? "",
+        })
+      }
       aria-label="Escribinos por WhatsApp"
       className="wa-float-btn group fixed z-40 flex items-center justify-end no-underline hover:!no-underline"
     >

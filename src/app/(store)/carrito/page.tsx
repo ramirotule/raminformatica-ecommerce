@@ -6,6 +6,7 @@ import { ProductImage } from "@/components/ProductImage";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ArsPrice } from "@/components/ArsPrice";
 import { productMeta } from "@/lib/format";
+import { trackEvent } from "@/lib/analytics";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useCartStore } from "@/store/cart-store";
 import { useCatalogStore } from "@/store/catalog-store";
@@ -75,7 +76,16 @@ export default function CarritoPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => void removeItem(c.id)}
+                    onClick={() => {
+                      trackEvent("remove_from_cart", {
+                        product_id: product.id,
+                        product_name: product.name,
+                        category: product.category,
+                        quantity: c.qty,
+                        unit_price: product.price,
+                      });
+                      void removeItem(c.id);
+                    }}
                     className="cursor-pointer border-none bg-transparent text-[12.5px] font-semibold text-sale"
                   >
                     Quitar
@@ -89,7 +99,16 @@ export default function CarritoPage() {
             action={
               <Link
                 href="/checkout"
-                onClick={() => resetCheckout()}
+                onClick={() => {
+                  trackEvent("start_checkout", {
+                    cart_items: items.length,
+                    cart_value: items.reduce((sum, item) => {
+                      const product = products.find((p) => p.id === item.id);
+                      return sum + (product?.price ?? 0) * item.qty;
+                    }, 0),
+                  });
+                  resetCheckout();
+                }}
                 className="block w-full rounded-[9px] bg-primary py-3.5 text-center text-[14.5px] font-bold !text-white no-underline hover:!text-white hover:!no-underline"
               >
                 Iniciar compra

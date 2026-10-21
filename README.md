@@ -28,6 +28,8 @@ Ver `.env.example`:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (opcional, solo servidor)
 - `DATABASE_URL` / `DIRECT_URL` (opcional)
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (opcional, activa analytics de Umami)
+- `NEXT_PUBLIC_UMAMI_SCRIPT_URL` (opcional, por defecto `https://cloud.umami.is/script.js`)
 
 ## Scripts
 
