@@ -1,6 +1,7 @@
 import type { Product } from "@/lib/products";
 import { normalizeKey } from "@/lib/admin/bulk-products";
 import { salePriceFromCost } from "@/lib/format";
+import { normalizeProductName } from "@/lib/product-name";
 
 export type SupplierPasteEntry = {
   lineNumber: number;
@@ -284,40 +285,6 @@ export function summarizeSupplierPlan(rows: SupplierMatchRow[]) {
   };
 }
 
-function titleCaseProductName(name: string): string {
-  const keep = new Set([
-    "gb",
-    "tb",
-    "5g",
-    "4g",
-    "usb",
-    "usb-c",
-    "nfc",
-    "gps",
-    "ps5",
-    "ps4",
-    "pc",
-    "tv",
-    "hd",
-    "uhd",
-    "qled",
-    "oled",
-    "wifi",
-    "sim",
-    "esim",
-  ]);
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((word) => {
-      const lower = word.toLowerCase();
-      if (keep.has(lower.replace(/[^a-z0-9-]/g, ""))) return word.toUpperCase();
-      if (/^\d/.test(word)) return word.toUpperCase();
-      return lower.charAt(0).toUpperCase() + lower.slice(1);
-    })
-    .join(" ");
-}
-
 /** Infiere marca/categoría para crear un producto desde el listado del proveedor. */
 export function inferBrandAndCategory(entry: SupplierPasteEntry): {
   brand: string;
@@ -401,7 +368,7 @@ export function inferBrandAndCategory(entry: SupplierPasteEntry): {
 /** Payload listo para addProduct a partir de una línea sin match. */
 export function productInputFromSupplierEntry(entry: SupplierPasteEntry) {
   const { brand, category } = inferBrandAndCategory(entry);
-  const name = titleCaseProductName(entry.name);
+  const name = normalizeProductName(entry.name);
   const costPrice = entry.cost;
   const price = salePriceFromCost(costPrice, 0);
   const { ram, storage } = parseRamStorageFromName(entry.name);

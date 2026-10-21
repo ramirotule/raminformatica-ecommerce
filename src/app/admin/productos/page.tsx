@@ -36,6 +36,7 @@ import {
   salePriceFromCost,
   type CurrencyCode,
 } from "@/lib/format";
+import { normalizeProductName } from "@/lib/product-name";
 import { richTextToPlain, toRichTextHtml } from "@/lib/rich-text";
 
 const inputClass =
@@ -569,7 +570,7 @@ export default function AdminProductosPage() {
       const ensuredBrand = await ensureBrand(brandName);
       if (providerName) await ensureProvider(providerName);
       const payload = {
-        name: toTitleCase(form.name),
+        name: normalizeProductName(form.name),
         brand: ensuredBrand.name,
         category: form.category,
         subcategory: form.subcategory.trim(),
@@ -599,6 +600,48 @@ export default function AdminProductosPage() {
         title: "No se pudo guardar",
         message: err instanceof Error ? err.message : "Error al guardar",
       });
+    }
+  };
+
+  const normalizeFilteredNames = async () => {
+    const changed = filtered.filter(
+      (p) => normalizeProductName(p.name) !== p.name,
+    );
+    if (changed.length === 0) {
+      void notice("No hay nombres para normalizar en el filtro actual.");
+      return;
+    }
+
+    const ok = await confirm({
+      title: "Normalizar nombres",
+      message: `Se van a normalizar ${changed.length} producto${changed.length === 1 ? "" : "s"} del filtro actual. ¿Continuar?`,
+      confirmLabel: "Normalizar",
+    });
+    if (!ok) return;
+
+    setBulkBusy(true);
+    setBulkAction("Normalizando nombres");
+    setBulkProgress({ current: 0, total: changed.length });
+    try {
+      for (let i = 0; i < changed.length; i++) {
+        const product = changed[i];
+        await updateProduct(product.id, {
+          name: normalizeProductName(product.name),
+        });
+        setBulkProgress({ current: i + 1, total: changed.length });
+      }
+      void notice(
+        `Listo: se normalizaron ${changed.length} nombre${changed.length === 1 ? "" : "s"}.`,
+      );
+    } catch (err) {
+      void notice({
+        title: "No se pudo normalizar",
+        message: err instanceof Error ? err.message : "Error al normalizar nombres",
+      });
+    } finally {
+      setBulkBusy(false);
+      setBulkAction("");
+      setBulkProgress({ current: 0, total: 0 });
     }
   };
 
@@ -759,6 +802,14 @@ export default function AdminProductosPage() {
               Limpiar filtros
             </button>
           )}
+          <button
+            type="button"
+            disabled={bulkBusy || filtered.length === 0}
+            onClick={() => void normalizeFilteredNames()}
+            className="cursor-pointer rounded-lg border border-border bg-transparent px-3 py-2.5 text-sm font-semibold text-muted hover:bg-accent-soft disabled:opacity-50"
+          >
+            Normalizar nombres (filtro)
+          </button>
         </div>
       </div>
 
@@ -807,7 +858,7 @@ export default function AdminProductosPage() {
               onBlur={(e) =>
                 setForm((prev) => ({
                   ...prev,
-                  name: toTitleCase(e.target.value),
+                  name: normalizeProductName(e.target.value),
                 }))
               }
               required

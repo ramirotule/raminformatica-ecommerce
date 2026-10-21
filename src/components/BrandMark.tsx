@@ -46,14 +46,35 @@ type Props = {
   className?: string;
 };
 
+const DEFAULT_BRAND_LOGOS: Record<string, string> = {
+  acer: "/brands/defaults/acer.svg",
+  asus: "/brands/defaults/asus.svg",
+  dell: "/brands/defaults/dell.svg",
+  dji: "/brands/defaults/dji.svg",
+  gigabyte: "/brands/defaults/gigabyte.svg",
+  hp: "/brands/defaults/hp.svg",
+  lenovo: "/brands/defaults/lenovo.svg",
+  msi: "/brands/defaults/msi.svg",
+};
+
+function defaultLogoForBrand(name: string): string | null {
+  const key = name.trim().toLowerCase();
+  for (const [brand, path] of Object.entries(DEFAULT_BRAND_LOGOS)) {
+    if (key === brand || key.includes(brand)) return path;
+  }
+  return null;
+}
+
 export function BrandMark({ name, logoUrl, className = "" }: Props) {
-  if (logoUrl) {
+  const resolvedLogo = logoUrl || defaultLogoForBrand(name);
+
+  if (resolvedLogo) {
     return (
       <div
         className={`relative flex items-center justify-center overflow-hidden rounded-2xl bg-white ${className}`.trim()}
       >
         <Image
-          src={logoUrl}
+          src={resolvedLogo}
           alt={name}
           fill
           sizes="(max-width: 640px) 50vw, 20vw"

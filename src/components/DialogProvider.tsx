@@ -109,10 +109,6 @@ export function DialogProvider({ children }: { children: ReactNode }) {
           aria-modal="true"
           aria-labelledby={titleId}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4"
-          onClick={() => {
-            if (pending.kind === "confirm") closeConfirm(false);
-            else closeNotice();
-          }}
         >
           <div
             className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-lg"

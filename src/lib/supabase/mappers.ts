@@ -207,21 +207,23 @@ export function mapProvider(row: ProviderRow) {
 export function mapStoreConfig(row: StoreConfigRow) {
   const parseHeroSlides = (value: unknown): HeroSlide[] => {
     if (!Array.isArray(value)) return [];
-    return value
-      .map((item) => {
-        if (!item || typeof item !== "object") return null;
-        const i = item as Record<string, unknown>;
-        const imageUrl = typeof i.imageUrl === "string" ? i.imageUrl.trim() : "";
-        const href = typeof i.href === "string" ? i.href.trim() : "";
-        const title = typeof i.title === "string" ? i.title.trim() : "";
-        if (!imageUrl) return null;
-        return {
-          imageUrl,
-          href: href || "/catalogo",
-          title,
-        };
-      })
-      .filter((x): x is HeroSlide => Boolean(x));
+    return value.reduce<HeroSlide[]>((acc, item) => {
+      if (!item || typeof item !== "object") return acc;
+      const i = item as Record<string, unknown>;
+      const imageUrl = typeof i.imageUrl === "string" ? i.imageUrl.trim() : "";
+      if (!imageUrl) return acc;
+      const href = typeof i.href === "string" ? i.href.trim() : "";
+      const title = typeof i.title === "string" ? i.title.trim() : "";
+
+      const slide: HeroSlide = {
+        imageUrl,
+        href: href || "/catalogo",
+      };
+      if (title) slide.title = title;
+
+      acc.push(slide);
+      return acc;
+    }, []);
   };
 
   return {

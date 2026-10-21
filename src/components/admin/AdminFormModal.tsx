@@ -53,7 +53,6 @@ export function AdminFormModal({
   return (
     <div
       className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/45 p-4 sm:p-6"
-      onClick={onClose}
       role="presentation"
     >
       <form

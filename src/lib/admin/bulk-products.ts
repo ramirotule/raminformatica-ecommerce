@@ -2,6 +2,7 @@ import {
   categoryLabels,
   type CategoryId,
 } from "@/lib/products";
+import { normalizeProductName } from "@/lib/product-name";
 import type { ProductInput } from "@/store/catalog-store";
 
 /** Encabezados de la plantilla de carga masiva (orden fijo). */
@@ -282,7 +283,7 @@ export function parseBulkProductsTable(table: string[][]): {
     if (raw.every((c) => !String(c).trim())) continue;
 
     const errors: string[] = [];
-    const name = cellAt(raw, idx, "nombre", "name");
+    const name = normalizeProductName(cellAt(raw, idx, "nombre", "name"));
     const brand = cellAt(raw, idx, "marca", "brand");
     const categoryRaw = cellAt(raw, idx, "categoria", "category");
     const subcategory = cellAt(raw, idx, "subcategoria", "subcategory");
