@@ -1,5 +1,6 @@
 import type { CategoryId, Order, OrderItem, OrderStatus, Product } from "@/lib/products";
 import { formatPrice, type CurrencyCode } from "@/lib/format";
+import type { HeroSlide } from "@/store/store-config";
 
 export type ProductRow = {
   id: number;
@@ -51,6 +52,7 @@ export type StoreConfigRow = {
   maintenance_enabled: boolean;
   maintenance_title: string;
   maintenance_message: string;
+  hero_slides?: unknown;
 };
 
 export type ProfileRow = {
@@ -203,6 +205,25 @@ export function mapProvider(row: ProviderRow) {
 }
 
 export function mapStoreConfig(row: StoreConfigRow) {
+  const parseHeroSlides = (value: unknown): HeroSlide[] => {
+    if (!Array.isArray(value)) return [];
+    return value
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const i = item as Record<string, unknown>;
+        const imageUrl = typeof i.imageUrl === "string" ? i.imageUrl.trim() : "";
+        const href = typeof i.href === "string" ? i.href.trim() : "";
+        const title = typeof i.title === "string" ? i.title.trim() : "";
+        if (!imageUrl) return null;
+        return {
+          imageUrl,
+          href: href || "/catalogo",
+          title,
+        };
+      })
+      .filter((x): x is HeroSlide => Boolean(x));
+  };
+
   return {
     storeName: row.store_name,
     tagline: row.tagline,
@@ -217,6 +238,7 @@ export function mapStoreConfig(row: StoreConfigRow) {
     maintenanceEnabled: row.maintenance_enabled ?? false,
     maintenanceTitle: row.maintenance_title ?? "",
     maintenanceMessage: row.maintenance_message ?? "",
+    heroSlides: parseHeroSlides(row.hero_slides),
   };
 }
 
@@ -235,6 +257,7 @@ export function toStoreConfigUpdate(config: ReturnType<typeof mapStoreConfig>) {
     maintenance_enabled: config.maintenanceEnabled,
     maintenance_title: config.maintenanceTitle,
     maintenance_message: config.maintenanceMessage,
+    hero_slides: config.heroSlides,
     updated_at: new Date().toISOString(),
   };
 }

@@ -22,7 +22,7 @@ import {
 } from "@/lib/products";
 import { swatchForColor } from "@/lib/product-colors";
 import { useCatalogStore } from "@/store/catalog-store";
-import { useBrandsStore } from "@/store/brands-store";
+import { normalizeBrandName, useBrandsStore } from "@/store/brands-store";
 import {
   slugifyCategoryId,
   useCategoriesStore,
@@ -555,29 +555,8 @@ export default function AdminProductosPage() {
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const brandName = form.brand.trim();
+    const brandName = normalizeBrandName(form.brand);
     const providerName = form.provider.trim();
-    const payload = {
-      name: toTitleCase(form.name),
-      brand: brandName,
-      category: form.category,
-      subcategory: form.subcategory.trim(),
-      provider: providerName,
-      costPrice: form.costPrice,
-      price: form.price ?? 0,
-      oldPrice: null,
-      stock: Number(form.stock) || 0,
-      installments: form.installments.trim(),
-      description: toRichTextHtml(form.description),
-      tags: form.tags,
-      colors: form.colors,
-      ram: form.ram.trim(),
-      storage: form.storage.trim(),
-      imageUrl: form.imageUrls[0] ?? null,
-      imageUrls: form.imageUrls,
-      active: form.active,
-      featured: form.featured,
-    };
 
     try {
       if (!brandName) {
@@ -587,8 +566,29 @@ export default function AdminProductosPage() {
         });
         return;
       }
-      await ensureBrand(brandName);
+      const ensuredBrand = await ensureBrand(brandName);
       if (providerName) await ensureProvider(providerName);
+      const payload = {
+        name: toTitleCase(form.name),
+        brand: ensuredBrand.name,
+        category: form.category,
+        subcategory: form.subcategory.trim(),
+        provider: providerName,
+        costPrice: form.costPrice,
+        price: form.price ?? 0,
+        oldPrice: null,
+        stock: Number(form.stock) || 0,
+        installments: form.installments.trim(),
+        description: toRichTextHtml(form.description),
+        tags: form.tags,
+        colors: form.colors,
+        ram: form.ram.trim(),
+        storage: form.storage.trim(),
+        imageUrl: form.imageUrls[0] ?? null,
+        imageUrls: form.imageUrls,
+        active: form.active,
+        featured: form.featured,
+      };
       if (editing) await updateProduct(editing.id, payload);
       else await addProduct(payload);
       setPanel("none");
@@ -1396,10 +1396,12 @@ export default function AdminProductosPage() {
                     disabled={bulkBusy || !bulkBrand.trim()}
                     onClick={() =>
                       void runBulk(async () => {
-                        const brand = bulkBrand.trim();
+                        const brand = normalizeBrandName(bulkBrand);
                         if (!brand) return;
-                        await ensureBrand(brand);
-                        await updateProducts(selectedIds(), { brand });
+                        const ensuredBrand = await ensureBrand(brand);
+                        await updateProducts(selectedIds(), {
+                          brand: ensuredBrand.name,
+                        });
                       })
                     }
                     className="cursor-pointer rounded-lg border-none bg-primary px-3 py-2 text-[12.5px] font-bold !text-white disabled:opacity-50"

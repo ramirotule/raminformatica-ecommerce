@@ -77,26 +77,33 @@ export function BulkProductImport({ onClose, onImported }: Props) {
         throw new Error("Sesión expirada. Volvé a iniciar sesión en el admin.");
       }
 
-      const { useBrandsStore } = await import("@/store/brands-store");
+      const { normalizeBrandName, useBrandsStore } = await import(
+        "@/store/brands-store"
+      );
       const ensureBrand = useBrandsStore.getState().ensureBrand;
+      const brandMap = new Map<string, string>();
       const brands = [
         ...new Set(
           validRows
-            .map((r) => r.brand?.trim())
+            .map((r) => normalizeBrandName(r.brand ?? ""))
             .filter((b): b is string => Boolean(b)),
         ),
       ];
       for (const brand of brands) {
-        await ensureBrand(brand);
+        const ensured = await ensureBrand(brand);
+        brandMap.set(brand.toLowerCase(), ensured.name);
       }
       const created = await addProducts(
-        validRows.map(
-          ({
-            rowNumber: _r,
-            errors: _e,
-            ...input
-          }) => input,
-        ),
+        validRows.map(({ rowNumber: _r, errors: _e, ...input }) => {
+          const normalized = normalizeBrandName(input.brand ?? "");
+          return {
+            ...input,
+            brand:
+              brandMap.get(normalized.toLowerCase()) ||
+              normalized ||
+              input.brand,
+          };
+        }),
       );
       onImported(created);
     } catch (err) {

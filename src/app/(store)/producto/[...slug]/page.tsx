@@ -9,6 +9,7 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { ShareButton } from "@/components/ShareButton";
 import { ArsPrice } from "@/components/ArsPrice";
+import { FinancingSimulator } from "@/components/FinancingSimulator";
 import { productMeta, starsFor } from "@/lib/format";
 import { trackEvent } from "@/lib/analytics";
 import { toRichTextHtml } from "@/lib/rich-text";
@@ -46,6 +47,7 @@ export default function ProductoPage() {
   const categories = useCategoriesStore((s) => s.categories);
   const product = products.find((p) => p.id === Number(idFromUrl));
   const [qty, setQty] = useState(1);
+  const [simulatorOpen, setSimulatorOpen] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const resetCheckout = useCheckoutStore((s) => s.resetCheckout);
 
@@ -248,19 +250,20 @@ export default function ProductoPage() {
                 >
                   Comprar ahora
                 </button>
-                <Link
-                  href={`/simulador?producto=${encodeURIComponent(String(product.id))}`}
-                  onClick={() =>
+                <button
+                  type="button"
+                  onClick={() => {
                     trackEvent("simulator_open_from_product", {
                       product_id: product.id,
                       product_name: product.name,
                       category: product.category,
-                    })
-                  }
+                    });
+                    setSimulatorOpen(true);
+                  }}
                   className="shrink-0 rounded-[9px] border border-primary bg-surface px-5 py-3 text-[14px] font-bold text-primary no-underline hover:!no-underline"
                 >
                   Simular financiación
-                </Link>
+                </button>
                 <ShareButton title={product.name} className="shrink-0" />
               </div>
             </>
@@ -342,6 +345,32 @@ export default function ProductoPage() {
             {related.map((p) => (
               <ProductCard key={p.id} product={p} variant="compact" />
             ))}
+          </div>
+        </div>
+      )}
+
+      {simulatorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Simulador de financiación"
+          onClick={() => setSimulatorOpen(false)}
+          className="fixed inset-0 z-[95] flex items-start justify-center overflow-y-auto bg-black/55 p-4 md:p-6"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative my-4 w-full max-w-[1120px] rounded-2xl border border-border bg-background p-4 shadow-2xl md:my-8 md:p-6"
+          >
+            <button
+              type="button"
+              onClick={() => setSimulatorOpen(false)}
+              aria-label="Cerrar simulador"
+              className="absolute top-3 right-3 z-10 rounded-md border-none bg-transparent px-2 py-1 text-2xl leading-none text-muted"
+            >
+              ×
+            </button>
+            <div className="mb-3 pr-8 text-lg font-bold">Simulador de financiación</div>
+            <FinancingSimulator initialProductId={String(product.id)} showHeader={false} />
           </div>
         </div>
       )}

@@ -27,6 +27,14 @@ type BrandsState = {
   ensureBrand: (name: string) => Promise<Brand>;
 };
 
+export function normalizeBrandName(value: string): string {
+  return value
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .replace(/\b([a-záéíóúñü])/g, (m) => m.toUpperCase());
+}
+
 function mapBrand(row: {
   id: string;
   name: string;
@@ -65,8 +73,8 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     });
   },
   addBrand: async (input) => {
-    const trimmed = input.name.trim();
-    if (!trimmed) throw new Error("El nombre de la marca es obligatorio");
+    const normalized = normalizeBrandName(input.name);
+    if (!normalized) throw new Error("El nombre de la marca es obligatorio");
     const supabase = createClient();
     const {
       data: { session },
@@ -76,7 +84,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     }
 
     const { data, error } = await supabase.rpc("ram_ensure_brand", {
-      p_name: trimmed,
+      p_name: normalized,
     });
     if (error) throw new Error(error.message);
     const row = Array.isArray(data) ? data[0] : data;
@@ -119,7 +127,9 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     const patch: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
-    if (input.name != null) patch.name = input.name.trim();
+    const normalizedName =
+      input.name != null ? normalizeBrandName(input.name) : undefined;
+    if (normalizedName != null) patch.name = normalizedName;
     if (input.active != null) patch.active = input.active;
     if (input.logoUrl !== undefined) patch.logo_url = input.logoUrl;
 
@@ -134,11 +144,15 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     }
 
     // Si renombramos, sincronizar productos que usaban el nombre viejo
-    if (input.name != null && current && current.name !== input.name.trim()) {
+    if (
+      normalizedName != null &&
+      current &&
+      current.name !== normalizedName
+    ) {
       await supabase
         .from("ram_products")
         .update({
-          brand: input.name.trim(),
+          brand: normalizedName,
           updated_at: new Date().toISOString(),
         })
         .eq("brand", current.name);
@@ -158,7 +172,7 @@ export const useBrandsStore = create<BrandsState>((set, get) => ({
     set((s) => ({ brands: s.brands.filter((b) => b.id !== id) }));
   },
   ensureBrand: async (name) => {
-    const trimmed = name.trim();
+    const trimmed = normalizeBrandName(name);
     const existing = get().brands.find(
       (b) => b.name.toLowerCase() === trimmed.toLowerCase(),
     );

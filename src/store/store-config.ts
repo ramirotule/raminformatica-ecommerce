@@ -9,6 +9,12 @@ import {
   type StoreConfigRow,
 } from "@/lib/supabase/mappers";
 
+export type HeroSlide = {
+  imageUrl: string;
+  href: string;
+  title?: string;
+};
+
 export type StoreConfig = {
   storeName: string;
   tagline: string;
@@ -23,6 +29,7 @@ export type StoreConfig = {
   maintenanceEnabled: boolean;
   maintenanceTitle: string;
   maintenanceMessage: string;
+  heroSlides: HeroSlide[];
 };
 
 type ConfigState = {
@@ -48,6 +55,7 @@ const defaultConfig: StoreConfig = {
   maintenanceEnabled: false,
   maintenanceTitle: "Estamos actualizando la pagina para una mejor experiencia.",
   maintenanceMessage: "Disculpe las molestias.",
+  heroSlides: [],
 };
 
 export const useStoreConfig = create<ConfigState>((set, get) => ({

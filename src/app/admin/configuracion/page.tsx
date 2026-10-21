@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ComboSelect } from "@/components/ComboSelect";
 import { useDialog } from "@/components/DialogProvider";
+import { ImageUploader } from "@/components/ImageUploader";
 import { MoneyInput } from "@/components/MoneyInput";
 import {
   currencyLabel,
@@ -29,6 +30,9 @@ export default function AdminConfigPage() {
     ...config,
     currency: normalizeCurrency(config.currency),
   });
+  const [tab, setTab] = useState<"general" | "carousel">("general");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
@@ -47,6 +51,13 @@ export default function AdminConfigPage() {
         freeShippingFrom: Number(form.freeShippingFrom) || 0,
         shippingCost: Number(form.shippingCost) || 0,
         maxInstallments: Number(form.maxInstallments) || 1,
+        heroSlides: form.heroSlides
+          .map((slide) => ({
+            imageUrl: slide.imageUrl.trim(),
+            href: slide.href.trim() || "/catalogo",
+            title: (slide.title ?? "").trim(),
+          }))
+          .filter((slide) => Boolean(slide.imageUrl)),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -58,18 +69,93 @@ export default function AdminConfigPage() {
     }
   };
 
+  const addHeroSlide = () => {
+    setForm((prev) => ({
+      ...prev,
+      heroSlides: [...prev.heroSlides, { imageUrl: "", href: "/catalogo", title: "" }],
+    }));
+  };
+
+  const updateHeroSlide = (
+    index: number,
+    patch: Partial<StoreConfig["heroSlides"][number]>,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      heroSlides: prev.heroSlides.map((slide, i) =>
+        i === index ? { ...slide, ...patch } : slide,
+      ),
+    }));
+  };
+
+  const removeHeroSlide = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      heroSlides: prev.heroSlides.filter((_, i) => i !== index),
+    }));
+  };
+
+  const moveHeroSlide = (index: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      const next = [...prev.heroSlides];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return { ...prev, heroSlides: next };
+    });
+  };
+
+  const reorderHeroSlide = (from: number, to: number) => {
+    if (from === to) return;
+    setForm((prev) => {
+      const next = [...prev.heroSlides];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return { ...prev, heroSlides: next };
+    });
+  };
+
   return (
     <div>
       <h1 className="mb-2 text-2xl font-bold">Configuración de la tienda</h1>
       <p className="mb-8 text-sm text-muted">
-        Datos generales, envíos y financiamiento.
+        Ajustes generales del sitio y carrusel principal de Home.
       </p>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setTab("general")}
+          className={`cursor-pointer rounded-[9px] border px-4 py-2 text-sm font-semibold ${
+            tab === "general"
+              ? "border-primary bg-primary text-white"
+              : "border-border bg-surface text-foreground"
+          }`}
+        >
+          General
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("carousel")}
+          className={`cursor-pointer rounded-[9px] border px-4 py-2 text-sm font-semibold ${
+            tab === "carousel"
+              ? "border-primary bg-primary text-white"
+              : "border-border bg-surface text-foreground"
+          }`}
+        >
+          Carrusel Home
+        </button>
+      </div>
 
       <form
         onSubmit={onSave}
-        className="max-w-2xl space-y-6 rounded-xl border border-border bg-surface p-6"
+        className={`space-y-6 rounded-xl border border-border bg-surface p-6 ${
+          tab === "carousel" ? "max-w-4xl" : "max-w-2xl"
+        }`}
       >
-        <section className="space-y-3">
+        {tab === "general" && (
+          <>
+            <section className="space-y-3">
           <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
             Identidad
           </h2>
@@ -92,9 +178,9 @@ export default function AdminConfigPage() {
             value={form.announcement}
             onChange={(e) => setForm({ ...form, announcement: e.target.value })}
           />
-        </section>
+            </section>
 
-        <section className="space-y-3">
+            <section className="space-y-3">
           <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
             Contacto
           </h2>
@@ -117,9 +203,9 @@ export default function AdminConfigPage() {
               }
             />
           </div>
-        </section>
+            </section>
 
-        <section className="space-y-3">
+            <section className="space-y-3">
           <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
             Moneda y envíos
           </h2>
@@ -158,39 +244,9 @@ export default function AdminConfigPage() {
               }
             />
           </div>
-        </section>
+            </section>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
-            Cuotas
-          </h2>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={form.installmentsEnabled}
-              onChange={(e) =>
-                setForm({ ...form, installmentsEnabled: e.target.checked })
-              }
-            />
-            Habilitar cuotas sin interés
-          </label>
-          <input
-            className={inputClass}
-            placeholder="Máximo de cuotas"
-            type="number"
-            min={1}
-            max={24}
-            value={form.maxInstallments}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                maxInstallments: Number(e.target.value) || 1,
-              })
-            }
-          />
-        </section>
-
-        <section className="space-y-3">
+            <section className="space-y-3">
           <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
             Modo mantenimiento
           </h2>
@@ -224,7 +280,123 @@ export default function AdminConfigPage() {
               setForm({ ...form, maintenanceMessage: e.target.value })
             }
           />
-        </section>
+            </section>
+          </>
+        )}
+
+        {tab === "carousel" && (
+          <section className="space-y-4">
+          <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
+            Home · Carrusel principal
+          </h2>
+          <p className="text-sm text-muted">
+            Cargá imágenes y a dónde redirige cada slide. El orden que definís
+            acá es exactamente el que se muestra en Home.
+          </p>
+
+          <div className="space-y-5">
+            {form.heroSlides.map((slide, i) => (
+              <div
+                key={`${slide.imageUrl || "slide"}-${i}`}
+                draggable
+                onDragStart={() => {
+                  setDragIndex(i);
+                  setDragOverIndex(i);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOverIndex(i);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragIndex == null) return;
+                  reorderHeroSlide(dragIndex, i);
+                  setDragIndex(null);
+                  setDragOverIndex(null);
+                }}
+                onDragEnd={() => {
+                  setDragIndex(null);
+                  setDragOverIndex(null);
+                }}
+                className={`rounded-xl border bg-background/30 p-4 transition-colors ${
+                  dragOverIndex === i && dragIndex !== i
+                    ? "border-primary bg-primary-softer/40"
+                    : "border-border"
+                }`}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold tracking-wide text-muted uppercase">
+                    <span
+                      className="inline-flex h-6 w-6 cursor-grab items-center justify-center rounded border border-border bg-surface text-[11px] active:cursor-grabbing"
+                      title="Arrastrar para reordenar"
+                      aria-hidden
+                    >
+                      ≡
+                    </span>
+                    <span>Slide {i + 1}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveHeroSlide(i, -1)}
+                      disabled={i === 0}
+                      className="cursor-pointer rounded border border-border bg-transparent px-2 py-1 text-xs font-semibold disabled:opacity-40"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveHeroSlide(i, 1)}
+                      disabled={i === form.heroSlides.length - 1}
+                      className="cursor-pointer rounded border border-border bg-transparent px-2 py-1 text-xs font-semibold disabled:opacity-40"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeHeroSlide(i)}
+                      className="cursor-pointer rounded border border-sale/35 bg-danger-soft px-2 py-1 text-xs font-semibold text-sale"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                </div>
+                <ImageUploader
+                  value={slide.imageUrl || null}
+                  onChange={(imageUrl) =>
+                    updateHeroSlide(i, { imageUrl: imageUrl ?? "" })
+                  }
+                  folder="home-slides"
+                  label="Imagen del slide"
+                  fit="cover"
+                />
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input
+                    className={inputClass}
+                    placeholder="Título opcional (ej. Ofertas de la semana)"
+                    value={slide.title ?? ""}
+                    onChange={(e) => updateHeroSlide(i, { title: e.target.value })}
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="Destino (ej. /catalogo?categoria=notebooks)"
+                    value={slide.href}
+                    onChange={(e) => updateHeroSlide(i, { href: e.target.value })}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={addHeroSlide}
+            className="cursor-pointer rounded-[9px] border border-border bg-transparent px-4 py-2 text-sm font-semibold"
+          >
+            + Agregar slide
+          </button>
+          </section>
+        )}
 
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <button

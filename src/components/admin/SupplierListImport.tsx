@@ -11,7 +11,7 @@ import {
   productInputFromSupplierEntry,
 } from "@/lib/admin/supplier-price-update";
 import { salePriceFromCost } from "@/lib/format";
-import { useBrandsStore } from "@/store/brands-store";
+import { normalizeBrandName, useBrandsStore } from "@/store/brands-store";
 import { useCatalogStore, type ProductInput } from "@/store/catalog-store";
 import { useCategoriesStore } from "@/store/categories-store";
 import { useProvidersStore } from "@/store/providers-store";
@@ -176,13 +176,23 @@ export function SupplierListImport({ onClose, onImported }: Props) {
     setError(null);
     try {
       const prov = await ensureProvider(provider);
-      const brandNames = [...new Set(selected.map((r) => r.brand.trim()))];
-      for (const b of brandNames) if (b) await ensureBrand(b);
+      const brandMap = new Map<string, string>();
+      const brandNames = [
+        ...new Set(selected.map((r) => normalizeBrandName(r.brand))),
+      ];
+      for (const b of brandNames) {
+        if (!b) continue;
+        const ensured = await ensureBrand(b);
+        brandMap.set(b.toLowerCase(), ensured.name);
+      }
 
       const inputs: ProductInput[] = selected.map((r) => ({
         ...r.base,
         name: r.name.trim(),
-        brand: r.brand.trim() || "Genérico",
+        brand:
+          brandMap.get(normalizeBrandName(r.brand).toLowerCase()) ||
+          normalizeBrandName(r.brand) ||
+          "Genérico",
         category: r.category,
         subcategory: r.subcategory,
         provider: prov.name,
