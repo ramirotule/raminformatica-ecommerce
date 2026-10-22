@@ -1,6 +1,10 @@
 import type { CategoryId, Order, OrderItem, OrderStatus, Product } from "@/lib/products";
 import { formatPrice, type CurrencyCode } from "@/lib/format";
-import type { HeroSlide } from "@/store/store-config";
+import type {
+  GetnetConfig,
+  HeroSlide,
+  PersonalCreditConfig,
+} from "@/store/store-config";
 
 export type ProductRow = {
   id: number;
@@ -53,6 +57,8 @@ export type StoreConfigRow = {
   maintenance_title: string;
   maintenance_message: string;
   hero_slides?: unknown;
+  getnet_costs?: unknown;
+  personal_credit_costs?: unknown;
 };
 
 export type ProfileRow = {
@@ -212,6 +218,8 @@ export function mapStoreConfig(row: StoreConfigRow) {
       const i = item as Record<string, unknown>;
       const imageUrl = typeof i.imageUrl === "string" ? i.imageUrl.trim() : "";
       if (!imageUrl) return acc;
+      const mobileImageUrl =
+        typeof i.mobileImageUrl === "string" ? i.mobileImageUrl.trim() : "";
       const href = typeof i.href === "string" ? i.href.trim() : "";
       const title = typeof i.title === "string" ? i.title.trim() : "";
 
@@ -219,11 +227,87 @@ export function mapStoreConfig(row: StoreConfigRow) {
         imageUrl,
         href: href || "/catalogo",
       };
+      if (mobileImageUrl) slide.mobileImageUrl = mobileImageUrl;
       if (title) slide.title = title;
 
       acc.push(slide);
       return acc;
     }, []);
+  };
+
+  const parseGetnetCosts = (value: unknown): GetnetConfig => {
+    const defaults: GetnetConfig = {
+      coefficient3: 1.0913,
+      coefficient6: 1.1666,
+      coefficient9: 1.2724,
+      coefficient12: 1.3659,
+      coefficient18: 1.569,
+      coefficient24: 1.795,
+      discountPct3: 14.7009,
+      discountPct6: 20.7952,
+      discountPct9: 28.1509,
+      discountPct12: 33.6968,
+      discountPct18: 43.4676,
+      discountPct24: 51.7385,
+      arancelInstallmentsPct: 2.53,
+      ivaPct: 21,
+    };
+    if (!value || typeof value !== "object") return defaults;
+    const v = value as Record<string, unknown>;
+    const read = (key: keyof GetnetConfig, fallback: number) => {
+      const raw = v[key];
+      if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+      if (typeof raw === "string" && raw.trim()) {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+      return fallback;
+    };
+    return {
+      coefficient3: read("coefficient3", defaults.coefficient3),
+      coefficient6: read("coefficient6", defaults.coefficient6),
+      coefficient9: read("coefficient9", defaults.coefficient9),
+      coefficient12: read("coefficient12", defaults.coefficient12),
+      coefficient18: read("coefficient18", defaults.coefficient18),
+      coefficient24: read("coefficient24", defaults.coefficient24),
+      discountPct3: read("discountPct3", defaults.discountPct3),
+      discountPct6: read("discountPct6", defaults.discountPct6),
+      discountPct9: read("discountPct9", defaults.discountPct9),
+      discountPct12: read("discountPct12", defaults.discountPct12),
+      discountPct18: read("discountPct18", defaults.discountPct18),
+      discountPct24: read("discountPct24", defaults.discountPct24),
+      arancelInstallmentsPct: read(
+        "arancelInstallmentsPct",
+        defaults.arancelInstallmentsPct,
+      ),
+      ivaPct: read("ivaPct", defaults.ivaPct),
+    };
+  };
+
+  const parsePersonalCreditCosts = (value: unknown): PersonalCreditConfig => {
+    const defaults: PersonalCreditConfig = {
+      surchargePct3: 25,
+      surchargePct6: 55,
+      surchargePct9: 85,
+      surchargePct12: 120,
+    };
+    if (!value || typeof value !== "object") return defaults;
+    const v = value as Record<string, unknown>;
+    const read = (key: keyof PersonalCreditConfig, fallback: number) => {
+      const raw = v[key];
+      if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+      if (typeof raw === "string" && raw.trim()) {
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+      return fallback;
+    };
+    return {
+      surchargePct3: read("surchargePct3", defaults.surchargePct3),
+      surchargePct6: read("surchargePct6", defaults.surchargePct6),
+      surchargePct9: read("surchargePct9", defaults.surchargePct9),
+      surchargePct12: read("surchargePct12", defaults.surchargePct12),
+    };
   };
 
   return {
@@ -241,6 +325,8 @@ export function mapStoreConfig(row: StoreConfigRow) {
     maintenanceTitle: row.maintenance_title ?? "",
     maintenanceMessage: row.maintenance_message ?? "",
     heroSlides: parseHeroSlides(row.hero_slides),
+    getnet: parseGetnetCosts(row.getnet_costs),
+    personalCredit: parsePersonalCreditCosts(row.personal_credit_costs),
   };
 }
 
@@ -260,6 +346,8 @@ export function toStoreConfigUpdate(config: ReturnType<typeof mapStoreConfig>) {
     maintenance_title: config.maintenanceTitle,
     maintenance_message: config.maintenanceMessage,
     hero_slides: config.heroSlides,
+    getnet_costs: config.getnet,
+    personal_credit_costs: config.personalCredit,
     updated_at: new Date().toISOString(),
   };
 }

@@ -45,7 +45,7 @@ const emptyShipping: ShippingForm = {
 
 const paymentLabels: Record<PaymentMethod, string> = {
   card: "Tarjeta de crédito",
-  installments: "Pagar en Cuotas",
+  installments: "Cuotas con interés",
   transfer: "Transferencia bancaria",
 };
 

@@ -16,8 +16,24 @@ export function Header() {
   const cartCount = useCartStore((s) => s.cartCount());
   const user = useAuthStore((s) => s.user);
   const [mounted, setMounted] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => setMobileMenuOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [mobileMenuOpen]);
 
   const count = mounted ? cartCount : 0;
   const isLoggedIn = mounted && Boolean(user);
@@ -75,7 +91,7 @@ export function Header() {
               isSimulador ? "text-primary" : "text-foreground"
             }`}
           >
-            Simulador
+            Financiación
           </Link>
           <Link
             href="/contacto"
@@ -152,6 +168,100 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      <div className="relative px-5 pb-2 md:hidden">
+        <button
+          type="button"
+          aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          className="flex h-8 w-10 items-center justify-center rounded-md border border-border bg-surface text-foreground transition-colors hover:bg-accent-soft"
+        >
+          {mobileMenuOpen ? (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-[16px] w-[16px]"
+              aria-hidden
+            >
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-[16px] w-[16px]"
+              aria-hidden
+            >
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {mobileMenuOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label="Cerrar menú"
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          />
+          <nav className="absolute top-[calc(100%-2px)] left-5 z-40 w-[220px] rounded-xl border border-border bg-surface p-2 shadow-[0_14px_34px_rgba(0,0,0,0.14)] md:hidden">
+            <div className="flex flex-col gap-1.5">
+              <MobileNavLink href="/" active={isHome}>
+                Inicio
+              </MobileNavLink>
+              <MobileNavLink href="/catalogo" active={isCatalog}>
+                Catálogo
+              </MobileNavLink>
+              <MobileNavLink href="/marcas" active={isMarcas}>
+                Marcas
+              </MobileNavLink>
+              <MobileNavLink href="/nosotros" active={isNosotros}>
+                Nosotros
+              </MobileNavLink>
+              <MobileNavLink href="/simulador" active={isSimulador}>
+                Financiación
+              </MobileNavLink>
+              <MobileNavLink href="/contacto" active={isContacto}>
+                Contacto
+              </MobileNavLink>
+            </div>
+          </nav>
+        </>
+      ) : null}
     </header>
+  );
+}
+
+function MobileNavLink({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-lg border px-3 py-2 text-left text-[13px] font-semibold no-underline hover:!no-underline ${
+        active
+          ? "border-primary bg-primary-soft text-primary-dark"
+          : "border-border bg-background text-foreground"
+      }`}
+    >
+      {children}
+    </Link>
   );
 }

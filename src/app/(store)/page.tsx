@@ -100,7 +100,12 @@ function HeroProductsCarousel({
   customSlides,
   configHydrated,
 }: {
-  customSlides: { imageUrl: string; href: string; title?: string }[];
+  customSlides: {
+    imageUrl: string;
+    mobileImageUrl?: string;
+    href: string;
+    title?: string;
+  }[];
   configHydrated: boolean;
 }) {
   const slides = useMemo(() => {
@@ -114,6 +119,7 @@ function HeroProductsCarousel({
         kind: "custom" as const,
         slide: {
           imageUrl: "/home-picture.png",
+          mobileImageUrl: "/home-picture.png",
           href: "/catalogo",
           title: "Explorá todo el catálogo",
         },
@@ -142,12 +148,12 @@ function HeroProductsCarousel({
 
   if (!configHydrated) {
     return (
-      <div className="relative h-[390px] w-full overflow-hidden rounded-2xl border border-border-soft bg-surface md:h-[560px]" />
+      <div className="relative h-[250px] w-full overflow-hidden rounded-2xl border border-border-soft bg-surface sm:h-[320px] md:h-[560px]" />
     );
   }
 
   return (
-    <div className="relative h-[390px] w-full overflow-hidden rounded-2xl border border-border-soft bg-surface md:h-[560px]">
+    <div className="relative h-[250px] w-full overflow-hidden rounded-2xl border border-border-soft bg-surface sm:h-[320px] md:h-[560px]">
       {slides.map((slide, i) => (
         <div
           key={`${slide.slide.imageUrl}-${i}`}
@@ -157,21 +163,29 @@ function HeroProductsCarousel({
               : "pointer-events-none z-[1] scale-[1.03] opacity-0 blur-[2px]"
           }`}
         >
-          <SmartLink href={slide.slide.href} className="group block h-full w-full bg-black no-underline hover:!no-underline">
+          <SmartLink href={slide.slide.href} className="group block h-full w-full no-underline hover:!no-underline">
             <div
               onMouseEnter={() => setPaused(true)}
               onMouseLeave={() => setPaused(false)}
               className="relative h-full w-full"
             >
             <Image
+              src={slide.slide.mobileImageUrl || slide.slide.imageUrl}
+              alt={slide.slide.title || "Slide principal"}
+              fill
+              priority={i <= 2}
+              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.01] md:hidden"
+              sizes="100vw"
+            />
+            <Image
               src={slide.slide.imageUrl}
               alt={slide.slide.title || "Slide principal"}
               fill
               priority={i <= 2}
-              className="object-contain object-center transition-transform duration-500 group-hover:scale-[1.01]"
+              className="hidden object-cover object-center transition-transform duration-500 group-hover:scale-[1.01] md:block"
               sizes="100vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
             {slide.slide.title ? (
               <div className="absolute right-0 bottom-0 left-0 p-4 md:p-5">
                 <div className="line-clamp-2 text-base font-bold text-white md:text-[22px]">

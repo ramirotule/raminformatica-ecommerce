@@ -262,7 +262,7 @@ export default function ProductoPage() {
                   }}
                   className="shrink-0 rounded-[9px] border border-primary bg-surface px-5 py-3 text-[14px] font-bold text-primary no-underline hover:!no-underline"
                 >
-                  Simular financiación
+                  Pagalo en cuotas
                 </button>
                 <ShareButton title={product.name} className="shrink-0" />
               </div>

@@ -11,8 +11,33 @@ import {
 
 export type HeroSlide = {
   imageUrl: string;
+  mobileImageUrl?: string;
   href: string;
   title?: string;
+};
+
+export type GetnetConfig = {
+  coefficient3: number;
+  coefficient6: number;
+  coefficient9: number;
+  coefficient12: number;
+  coefficient18: number;
+  coefficient24: number;
+  discountPct3: number;
+  discountPct6: number;
+  discountPct9: number;
+  discountPct12: number;
+  discountPct18: number;
+  discountPct24: number;
+  arancelInstallmentsPct: number;
+  ivaPct: number;
+};
+
+export type PersonalCreditConfig = {
+  surchargePct3: number;
+  surchargePct6: number;
+  surchargePct9: number;
+  surchargePct12: number;
 };
 
 export type StoreConfig = {
@@ -30,6 +55,8 @@ export type StoreConfig = {
   maintenanceTitle: string;
   maintenanceMessage: string;
   heroSlides: HeroSlide[];
+  getnet: GetnetConfig;
+  personalCredit: PersonalCreditConfig;
 };
 
 type ConfigState = {
@@ -56,6 +83,29 @@ const defaultConfig: StoreConfig = {
   maintenanceTitle: "Estamos actualizando la pagina para una mejor experiencia.",
   maintenanceMessage: "Disculpe las molestias.",
   heroSlides: [],
+  getnet: {
+    coefficient3: 1.0913,
+    coefficient6: 1.1666,
+    coefficient9: 1.2724,
+    coefficient12: 1.3659,
+    coefficient18: 1.569,
+    coefficient24: 1.795,
+    // Referencia tomada de tu simulación real en Getnet (La Pampa).
+    discountPct3: 14.7009,
+    discountPct6: 20.7952,
+    discountPct9: 28.1509,
+    discountPct12: 33.6968,
+    discountPct18: 43.4676,
+    discountPct24: 51.7385,
+    arancelInstallmentsPct: 2.53,
+    ivaPct: 21,
+  },
+  personalCredit: {
+    surchargePct3: 25,
+    surchargePct6: 55,
+    surchargePct9: 85,
+    surchargePct12: 120,
+  },
 };
 
 export const useStoreConfig = create<ConfigState>((set, get) => ({

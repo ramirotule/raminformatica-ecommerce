@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ProductImage } from "@/components/ProductImage";
+import { useEffect, useMemo, useState } from "react";
+import { GetnetMark } from "@/components/GetnetMark";
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatAmount, parseMoneyInput } from "@/lib/format";
-import { INSTALLMENT_PLANS } from "@/lib/installments";
+import { whatsappHref } from "@/lib/social";
 import { useCatalogStore } from "@/store/catalog-store";
+import { useStoreConfig } from "@/store/store-config";
 
 type Props = {
   initialProductId?: string;
@@ -17,28 +18,28 @@ export function FinancingSimulator({
   showHeader = true,
 }: Props) {
   const products = useCatalogStore((s) => s.products);
+  const getnet = useStoreConfig((s) => s.config.getnet);
+  const personalCredit = useStoreConfig((s) => s.config.personalCredit);
+  const supportPhone = useStoreConfig((s) => s.config.supportPhone);
   const { formatPrice, blueVenta } = useCurrency();
   const [productId, setProductId] = useState(initialProductId);
-  const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const [preview, setPreview] = useState(false);
-  const comboRef = useRef<HTMLDivElement>(null);
   const [rawAmountUsd, setRawAmountUsd] = useState("");
   const [rawAmountArs, setRawAmountArs] = useState("");
   const [amountSource, setAmountSource] = useState<"ars" | "usd">("ars");
-  const [rawDownPayment, setRawDownPayment] = useState("");
+  const [rawDownPaymentArs, setRawDownPaymentArs] = useState("");
+  const [rawDownPaymentUsd, setRawDownPaymentUsd] = useState("");
+  const [financingMethod, setFinancingMethod] = useState<"getnet" | "personal">(
+    "getnet",
+  );
 
   useEffect(() => {
     setProductId(initialProductId);
   }, [initialProductId]);
 
-  const active = useMemo(
-    () =>
-      products.filter((p) => p.active).sort((a, b) => a.name.localeCompare(b.name)),
-    [products],
+  const selected = useMemo(
+    () => products.find((p) => p.active && String(p.id) === productId),
+    [products, productId],
   );
-
-  const selected = active.find((p) => String(p.id) === productId);
   const amountUsdInput = parseMoneyInput(rawAmountUsd);
   const amountArsInput = parseMoneyInput(rawAmountArs);
   const amount = useMemo(() => {
@@ -47,37 +48,68 @@ export function FinancingSimulator({
     return amountUsdInput;
   }, [selected, amountSource, blueVenta, amountArsInput, amountUsdInput]);
 
-  const downPaymentInput = parseMoneyInput(rawDownPayment);
-  const downPaymentUsd = blueVenta ? downPaymentInput / blueVenta : downPaymentInput;
+  const downPaymentArsInput = parseMoneyInput(rawDownPaymentArs);
+  const downPaymentUsdInput = parseMoneyInput(rawDownPaymentUsd);
+  const downPaymentUsd =
+    (blueVenta ? downPaymentArsInput / blueVenta : downPaymentArsInput) +
+    downPaymentUsdInput;
   const downPayment = Math.min(downPaymentUsd, amount);
   const financed = amount - downPayment;
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    const list = q ? active.filter((p) => p.name.toLowerCase().includes(q)) : active;
-    return list.slice(0, 50);
-  }, [active, search]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (!comboRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
-  }, [open]);
-
-  useEffect(() => {
-    if (!preview) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPreview(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [preview]);
-
   const money = (usd: number) =>
     blueVenta ? `$ ${formatAmount(usd * blueVenta)}` : formatPrice(usd);
+  const getnetInstallmentPlans = [
+    { cuotas: 1, coefficient: 1 },
+    {
+      cuotas: 3,
+      coefficient: getnet.coefficient3,
+      discountPct: getnet.discountPct3,
+    },
+    {
+      cuotas: 6,
+      coefficient: getnet.coefficient6,
+      discountPct: getnet.discountPct6,
+    },
+    {
+      cuotas: 9,
+      coefficient: getnet.coefficient9,
+      discountPct: getnet.discountPct9,
+    },
+    {
+      cuotas: 12,
+      coefficient: getnet.coefficient12,
+      discountPct: getnet.discountPct12,
+    },
+    {
+      cuotas: 18,
+      coefficient: getnet.coefficient18,
+      discountPct: getnet.discountPct18,
+    },
+    {
+      cuotas: 24,
+      coefficient: getnet.coefficient24,
+      discountPct: getnet.discountPct24,
+    },
+  ];
+  const personalInstallmentPlans = [
+    { cuotas: 1, surchargePct: 0 },
+    { cuotas: 3, surchargePct: personalCredit.surchargePct3 },
+    { cuotas: 6, surchargePct: personalCredit.surchargePct6 },
+    { cuotas: 9, surchargePct: personalCredit.surchargePct9 },
+    { cuotas: 12, surchargePct: personalCredit.surchargePct12 },
+  ].map((plan) => ({
+    cuotas: plan.cuotas,
+    coefficient: 1 + plan.surchargePct / 100,
+    discountPct: 0,
+  }));
+  const installmentPlans =
+    financingMethod === "getnet" ? getnetInstallmentPlans : personalInstallmentPlans;
+  const personalCreditWhatsappHref = whatsappHref(
+    supportPhone,
+    `Me interesa comprar el producto ${selected?.name ?? "XX"} con un credito personal.`,
+  );
+  const showControls = showHeader || !initialProductId;
+  const compactLayout = !showHeader;
 
   return (
     <div className={showHeader ? "py-10 md:py-14" : "py-1"}>
@@ -90,93 +122,17 @@ export function FinancingSimulator({
             Simulador de cuotas
           </h1>
           <p className="text-[15px] leading-relaxed text-muted md:text-base">
-            Elegí un producto o ingresá un monto en pesos o en US$ y mirá cuánto
-            sería cada cuota.
+            Simulador de cuotas para pagar con tarjetas Visa y Mastercard
+            bancarizadas mediante link de pago con la plataforma{" "}
+            <GetnetMark className="text-[15px]" /> del Banco Santander Rio.
           </p>
         </div>
       )}
 
-      <div className="grid max-w-[68rem] gap-4 rounded-xl border border-border bg-surface p-5 md:grid-cols-[1.5fr_auto_1fr_1fr_1fr]">
-        <div className="text-[13px] font-semibold" ref={comboRef}>
-          Producto
-          <div className="relative mt-1.5">
-            <input
-              value={open ? search : (selected?.name ?? search)}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setOpen(true);
-              }}
-              onFocus={() => {
-                setSearch("");
-                setOpen(true);
-              }}
-              placeholder="Buscar producto o ingresar monto manual"
-              autoComplete="off"
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm font-normal outline-none placeholder:text-muted-soft focus:border-primary"
-            />
-            {open && (
-              <ul className="absolute top-[calc(100%+6px)] right-0 left-0 z-20 max-h-72 overflow-y-auto rounded-xl border border-border bg-surface py-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.14)]">
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProductId("");
-                      setSearch("");
-                      setRawAmountUsd("");
-                      setRawAmountArs("");
-                      setOpen(false);
-                    }}
-                    className="w-full cursor-pointer border-none bg-transparent px-3 py-2 text-left text-sm font-normal text-muted hover:bg-accent-soft"
-                  >
-                    Ingresar monto manual
-                  </button>
-                </li>
-                {filtered.length === 0 && (
-                  <li className="px-3 py-2 text-sm font-normal text-muted">
-                    Sin resultados
-                  </li>
-                )}
-                {filtered.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProductId(String(p.id));
-                        setSearch("");
-                        setOpen(false);
-                      }}
-                      className="w-full cursor-pointer border-none bg-transparent px-3 py-2 text-left text-sm font-normal text-foreground hover:bg-accent-soft"
-                    >
-                      {p.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-        <div aria-hidden={!selected}>
-          <div className="text-[13px] leading-[1.2] select-none">&nbsp;</div>
-          {selected ? (
-            <button
-              type="button"
-              onClick={() => setPreview(true)}
-              aria-label="Ver imagen del producto"
-              className="mt-1.5 block h-[44px] w-[44px] cursor-pointer rounded-lg border-none bg-transparent p-0"
-            >
-              <ProductImage
-                product={selected}
-                className="h-[44px] w-[44px] rounded-lg border border-border-soft"
-                sizes="44px"
-                showDiscount={false}
-              />
-            </button>
-          ) : (
-            <div className="mt-1.5 h-[44px] w-[44px] rounded-lg border border-dashed border-border" />
-          )}
-        </div>
+      {showControls && (
+      <div className="grid max-w-[68rem] gap-3 rounded-xl border border-border bg-surface p-5 md:grid-cols-[1fr_1fr_0.72fr_0.72fr]">
         <label className="text-[13px] font-semibold">
-          Monto contado efectivo ($)
+          Monto a financiar
           <div className="relative mt-1.5">
             <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold text-muted">
               $
@@ -232,97 +188,143 @@ export function FinancingSimulator({
           </div>
         </label>
         <label className="text-[13px] font-semibold">
-          Entrega <span className="font-normal text-muted">(opcional)</span>
+          Entrega $ <span className="font-normal text-muted">(opcional)</span>
           <div className="relative mt-1.5">
             <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold text-muted">
-              {blueVenta ? "$" : "US$"}
+              $
             </span>
             <input
               inputMode="numeric"
-              value={rawDownPayment ? formatAmount(downPaymentInput) : ""}
-              onChange={(e) => setRawDownPayment(e.target.value)}
+              value={rawDownPaymentArs ? formatAmount(downPaymentArsInput) : ""}
+              onChange={(e) => setRawDownPaymentArs(e.target.value)}
               placeholder="0"
-              className={`w-full rounded-lg border border-border bg-surface py-2.5 pr-3 ${blueVenta ? "pl-8" : "pl-12"} text-sm font-normal outline-none placeholder:text-muted-soft focus:border-primary`}
+              className="w-full rounded-lg border border-border bg-surface py-2.5 pr-3 pl-8 text-sm font-normal outline-none placeholder:text-muted-soft focus:border-primary"
+            />
+          </div>
+        </label>
+        <label className="text-[13px] font-semibold">
+          Entrega US$ <span className="font-normal text-muted">(opcional)</span>
+          <div className="relative mt-1.5">
+            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-semibold text-muted">
+              US$
+            </span>
+            <input
+              inputMode="numeric"
+              value={rawDownPaymentUsd ? formatAmount(downPaymentUsdInput) : ""}
+              onChange={(e) => setRawDownPaymentUsd(e.target.value)}
+              placeholder="0"
+              className="w-full rounded-lg border border-border bg-surface py-2.5 pr-3 pl-12 text-sm font-normal outline-none placeholder:text-muted-soft focus:border-primary"
             />
           </div>
         </label>
       </div>
-
-      {preview && selected && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={selected.name}
-          onClick={() => setPreview(false)}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[26rem] rounded-2xl bg-surface p-4 shadow-xl"
-          >
-            <button
-              type="button"
-              onClick={() => setPreview(false)}
-              aria-label="Cerrar"
-              className="absolute top-2 right-3 z-10 cursor-pointer border-none bg-transparent text-2xl leading-none text-muted"
-            >
-              ×
-            </button>
-            <ProductImage
-              product={selected}
-              className="aspect-square w-full rounded-xl border border-border-soft"
-              sizes="416px"
-              showDiscount={false}
-              priority
-            />
-            <div className="mt-3 text-[15px] font-bold">{selected.name}</div>
-            <div className="text-[12.5px] text-muted">{selected.brand}</div>
-          </div>
-        </div>
       )}
 
       {amount > 0 && (
-        <div className="mt-6 grid max-w-[44rem] gap-3">
+        <div className={`mt-6 space-y-3 ${compactLayout ? "max-w-[56rem]" : "max-w-[68rem]"}`}>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setFinancingMethod("getnet")}
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                financingMethod === "getnet"
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-border bg-surface text-muted"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1">
+                <GetnetMark className="text-xs" />
+                <span>(Tarjetas Visa & Mastercard bancarizadas)</span>
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFinancingMethod("personal")}
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold ${
+                financingMethod === "personal"
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-border bg-surface text-muted"
+              }`}
+            >
+              Crédito personal
+            </button>
+          </div>
           {downPayment > 0 && (
             <div className="rounded-xl border border-border bg-accent-soft px-5 py-3 text-[13.5px] text-body-text">
               Entrega <strong>{money(downPayment)}</strong> · A financiar{" "}
               <strong>{money(financed)}</strong>
             </div>
           )}
-          {INSTALLMENT_PLANS.map((plan) => {
-            const total = financed * (1 + plan.surcharge / 100);
-            const cuota = total / plan.cuotas;
-            return (
-              <div
-                key={plan.cuotas}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-5 py-4"
-              >
-                <div>
-                  <div className="text-[15px] font-bold">
-                    {plan.cuotas === 1 ? "Contado" : `${plan.cuotas} cuotas`}
-                  </div>
+          <div
+            className={`grid grid-cols-1 gap-2.5 ${compactLayout ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}
+          >
+            {installmentPlans.map((plan) => {
+              const receiveRatio =
+                plan.cuotas === 1
+                  ? 1
+                  : Math.max(0, 1 - (plan.discountPct ?? 0) / 100);
+              const extraPct =
+                plan.cuotas === 1
+                  ? 0
+                  : receiveRatio > 0 && plan.coefficient > 0
+                    ? Math.max(0, (1 / (plan.coefficient * receiveRatio) - 1) * 100)
+                    : 0;
+              const effectiveCoefficient = plan.coefficient * (1 + extraPct / 100);
+              const total = financed * effectiveCoefficient;
+              const cuota = total / plan.cuotas;
+              return (
+                <div
+                  key={plan.cuotas}
+                  className={`rounded-xl border border-border bg-surface ${
+                    compactLayout ? "px-4 py-3" : "px-5 py-4"
+                  }`}
+                >
                   <div className="text-[12.5px] text-muted">
-                    Total {money(total)}
-                    {plan.surcharge > 0
-                      ? ` · recargo ${plan.surcharge.toFixed(2).replace(".", ",")}%`
-                      : ""}
+                    {plan.cuotas === 1 ? "Contado" : `Total financiado ${money(total)}`}
+                  </div>
+                  <div
+                    className={`mt-1 text-[18px] leading-tight font-bold ${
+                      plan.cuotas === 1 ? "text-foreground" : "text-primary"
+                    }`}
+                  >
+                    {plan.cuotas === 1
+                      ? money(total)
+                      : `${plan.cuotas} cuotas de ${money(cuota)}`}
                   </div>
                 </div>
-                <div className="text-right text-lg font-bold text-primary">
-                  {money(cuota)}
-                </div>
-              </div>
-            );
-          })}
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-accent-soft px-4 py-3 text-[13px] text-body-text">
-            <span className="shrink-0 rounded-md bg-[#EC0000] px-2 py-1 text-[11px] font-extrabold tracking-wide text-white">
-              Santander
-            </span>
-            <span>
-              La financiación es mediante la plataforma{" "}
-              <strong>GETNET</strong> del <strong>Banco Santander Río</strong>.
-            </span>
+              );
+            })}
           </div>
+          {financingMethod === "getnet" ? (
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-accent-soft px-4 py-3 text-[13px] text-body-text">
+              <span className="shrink-0 rounded-md bg-[#EC0000] px-2 py-1 text-[11px] font-extrabold tracking-wide text-white">
+                Santander
+              </span>
+              <span>
+                La financiación es mediante la plataforma{" "}
+                <strong>
+                  <GetnetMark className="text-[13px]" />
+                </strong>{" "}
+                con tarjetas de crédito{" "}
+                <strong>Visa y Mastercard</strong> bancarizadas de{" "}
+                <strong>todos los bancos</strong>.
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-xl border border-border bg-accent-soft px-4 py-3 text-[13px] text-body-text">
+                Simulación de <strong>crédito personal</strong> con tasas estimadas.
+              </div>
+              <a
+                href={personalCreditWhatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-fit items-center rounded-lg border border-primary/35 bg-primary-soft px-3.5 py-2 text-[12.5px] font-semibold text-primary no-underline hover:bg-primary hover:text-white hover:!no-underline"
+              >
+                Sujeto a bases y condiciones. Consultar
+              </a>
+            </>
+          )}
           <p className="text-xs text-muted-soft">
             Valores orientativos. El costo final puede variar según la tarjeta
             y el banco.

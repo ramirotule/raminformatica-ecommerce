@@ -62,6 +62,7 @@ export default function CatalogoClient() {
   const [page, setPage] = useState(1);
   /** En celular la lista de categorías es un acordeón (cerrado por defecto). */
   const [catOpen, setCatOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
     setQuery(searchParams.get("q") ?? "");
@@ -365,64 +366,78 @@ export default function CatalogoClient() {
         <div className="flex flex-col gap-5 px-4 py-5 pb-[60px] md:px-6 lg:flex-row lg:items-start lg:gap-6 lg:px-0 lg:pl-3 lg:pr-6 xl:pl-4 xl:pr-8">
           {/* Celular: categoría, luego marca + orden en una fila y buscador debajo */}
           <div className="space-y-3 lg:hidden">
-            <button
-              type="button"
-              onClick={() => setCatOpen((v) => !v)}
-              aria-expanded={catOpen}
-              className="flex w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3.5 py-2.5 text-left text-sm font-medium text-foreground"
-            >
-              <span className="truncate">
-                <span className="text-muted">Categoría: </span>
-                {categories.find((c) => c.id === category)?.label ?? "Todos"}
-                {subcategory !== "all" ? ` · ${subcategory}` : ""}
-              </span>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 12 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                className={`shrink-0 transition-transform ${catOpen ? "rotate-180" : ""}`}
-                aria-hidden="true"
+            <div className="flex items-center gap-2">
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar productos…"
+                aria-label="Buscar productos"
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-soft focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((v) => !v)}
+                className="shrink-0 cursor-pointer rounded-lg border border-border bg-surface px-3 py-2.5 text-xs font-semibold text-foreground"
               >
-                <path d="M3 4.5 6 7.5 9 4.5" />
-              </svg>
-            </button>
-            {catOpen && (
-              <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-1.5">
-                {categoryItems}
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <ComboSelect
-                value={brand}
-                options={brandOptions}
-                onChange={selectBrand}
-                placeholder="Marca"
-                searchPlaceholder="Buscar marca…"
-                searchable
-                fullWidth
-              />
-              <ComboSelect
-                value={sort}
-                options={SORT_OPTIONS}
-                onChange={setSort}
-                placeholder="Ordenar"
-                searchable
-                searchPlaceholder="Buscar orden…"
-                fullWidth
-                menuAlignRight
-              />
+                {mobileFiltersOpen ? "Ocultar filtros" : "Mostrar filtros"}
+              </button>
             </div>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar productos…"
-              aria-label="Buscar productos"
-              className="w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-soft focus:border-primary"
-            />
+
+            {mobileFiltersOpen && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setCatOpen((v) => !v)}
+                  aria-expanded={catOpen}
+                  className="flex w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3.5 py-2.5 text-left text-sm font-medium text-foreground"
+                >
+                  <span className="truncate">
+                    <span className="text-muted">Categoría: </span>
+                    {categories.find((c) => c.id === category)?.label ?? "Todos"}
+                    {subcategory !== "all" ? ` · ${subcategory}` : ""}
+                  </span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    className={`shrink-0 transition-transform ${catOpen ? "rotate-180" : ""}`}
+                    aria-hidden="true"
+                  >
+                    <path d="M3 4.5 6 7.5 9 4.5" />
+                  </svg>
+                </button>
+                {catOpen && (
+                  <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-1.5">
+                    {categoryItems}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <ComboSelect
+                    value={brand}
+                    options={brandOptions}
+                    onChange={selectBrand}
+                    placeholder="Marca"
+                    searchPlaceholder="Buscar marca…"
+                    searchable
+                    fullWidth
+                  />
+                  <ComboSelect
+                    value={sort}
+                    options={SORT_OPTIONS}
+                    onChange={setSort}
+                    placeholder="Ordenar"
+                    searchable
+                    searchPlaceholder="Buscar orden…"
+                    fullWidth
+                    menuAlignRight
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <aside className="hidden w-full shrink-0 lg:block lg:space-y-7 lg:w-[210px] lg:pl-1 xl:w-[220px]">

@@ -38,15 +38,15 @@ export function ProductImage({
         </span>
       )}
       {src ? (
-        <span className="absolute inset-2">
-          <span className="relative block h-full w-full">
+        <span className="absolute inset-2.5 flex items-center justify-center">
+          <span className="relative block aspect-square h-full max-w-full">
             <Image
               src={src}
               alt={alt}
               fill
               priority={priority}
               sizes={sizes}
-              className="object-contain object-center"
+              className="object-contain object-center p-1"
               style={{ objectFit: "contain", objectPosition: "center" }}
             />
           </span>

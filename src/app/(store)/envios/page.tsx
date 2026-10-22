@@ -45,7 +45,7 @@ export default function EnviosPage() {
           <p>
             Cuando el pedido sale de nuestro depósito,{" "}
             <strong className="text-foreground">
-              RAM Informatica no se responsabiliza por perdida, robo, demora, dano o
+              RAM Informatica no se responsabiliza por perdida, robo, demora, daño o
               rotura
             </strong>{" "}
             durante el trayecto. Los reclamos se gestionan con la transportista.
@@ -60,7 +60,7 @@ export default function EnviosPage() {
             <li>Confirmá dirección y teléfono antes de comprar.</li>
             <li>
               Si hay seguro u embalaje extra del transportista, es opcional y a
-              cargo tuyo.
+              cargo del comprador.
             </li>
             <li>
               Revisá el paquete al recibirlo y dejá constancia si hay daños.

@@ -7,9 +7,14 @@ import { useCartStore } from "@/store/cart-store";
 type Props = {
   title?: string;
   action?: React.ReactNode;
+  shippingLabel?: string;
 };
 
-export function OrderSummary({ title = "Resumen", action }: Props) {
+export function OrderSummary({
+  title = "Resumen",
+  action,
+  shippingLabel,
+}: Props) {
   const { formatPrice } = useCurrency();
   const subtotal = useCartStore((s) => s.subtotal());
   const shipping = useCartStore((s) => s.shipping());
@@ -25,7 +30,8 @@ export function OrderSummary({ title = "Resumen", action }: Props) {
       <div className="mb-3.5 flex justify-between gap-3 text-sm text-body-text">
         <span>Envío</span>
         <span className="text-right text-muted">
-          {shipping === 0 ? "A cargo del comprador" : formatPrice(shipping)}
+          {shippingLabel ??
+            (shipping === 0 ? "A cargo del comprador" : formatPrice(shipping))}
         </span>
       </div>
       <div className="mb-3.5 h-px bg-border" />

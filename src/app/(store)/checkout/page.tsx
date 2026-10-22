@@ -14,17 +14,18 @@ import {
   useCheckoutStore,
   type PaymentMethod,
 } from "@/store/checkout-store";
+import { useStoreConfig } from "@/store/store-config";
 
 const paymentDefs: {
   id: PaymentMethod;
   label: string;
   desc: string;
 }[] = [
-  { id: "card", label: "Tarjeta de crédito/débito", desc: "Pago único" },
+  { id: "card", label: "Contado efectivo", desc: "Pago único" },
   {
     id: "installments",
-    label: "Cuotas sin interés",
-    desc: "Hasta 12 cuotas según el producto",
+    label: "Cuotas con interés",
+    desc: "Hasta 12 cuotas",
   },
   {
     id: "transfer",
@@ -42,9 +43,11 @@ const stepDefs = [
 export default function CheckoutPage() {
   const { notice } = useDialog();
   const router = useRouter();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, formatArs } = useCurrency();
+  const getnet = useStoreConfig((s) => s.config.getnet);
   const user = useAuthStore((s) => s.user);
   const items = useCartStore((s) => s.items);
+  const subtotal = useCartStore((s) => s.subtotal());
   const products = useCatalogStore((s) => s.products);
   const clearCart = useCartStore((s) => s.clearCart);
   const {
@@ -61,6 +64,30 @@ export default function CheckoutPage() {
   } = useCheckoutStore();
 
   const [showLogin, setShowLogin] = useState(false);
+  const formatFinancingAmount = (amountUsd: number) =>
+    formatArs(amountUsd) ?? formatPrice(amountUsd);
+  const installmentOptions = [
+    {
+      cuotas: 3,
+      coefficient: getnet.coefficient3,
+      discountPct: getnet.discountPct3,
+    },
+    {
+      cuotas: 6,
+      coefficient: getnet.coefficient6,
+      discountPct: getnet.discountPct6,
+    },
+    {
+      cuotas: 9,
+      coefficient: getnet.coefficient9,
+      discountPct: getnet.discountPct9,
+    },
+    {
+      cuotas: 12,
+      coefficient: getnet.coefficient12,
+      discountPct: getnet.discountPct12,
+    },
+  ];
 
   useEffect(() => {
     if (user) setShowLogin(false);
@@ -113,7 +140,7 @@ export default function CheckoutPage() {
         })}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-9 pb-[60px] lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 items-start gap-9 pb-[60px] lg:grid-cols-[1fr_340px] lg:items-stretch">
         <div className="rounded-xl border border-border bg-surface p-[26px]">
           {step === 1 && (
             <>
@@ -307,7 +334,46 @@ export default function CheckoutPage() {
             ))}
         </div>
 
-        <OrderSummary title="Tu pedido" />
+        <div className="space-y-3 lg:flex lg:h-full lg:flex-col">
+          <OrderSummary title="Tu pedido" shippingLabel="A convenir" />
+          {step > 1 && payment === "installments" && subtotal > 0 && (
+            <div className="rounded-xl border border-border bg-surface p-4 lg:flex-1">
+              <div className="mb-2 text-[13px] font-bold">
+                Opciones de financiación en pesos
+              </div>
+              <div className="space-y-2">
+                {installmentOptions.map((plan) => {
+                    const receiveRatio = Math.max(0, 1 - plan.discountPct / 100);
+                    const extraPct =
+                      receiveRatio > 0 && plan.coefficient > 0
+                        ? Math.max(0, (1 / (plan.coefficient * receiveRatio) - 1) * 100)
+                        : 0;
+                    const adjustedCoefficient = plan.coefficient * (1 + extraPct / 100);
+                    const totalWithSurcharge = subtotal * adjustedCoefficient;
+                    const installmentAmount = totalWithSurcharge / plan.cuotas;
+                    return (
+                      <div
+                        key={plan.cuotas}
+                        className="rounded-lg border border-border-soft bg-background px-3 py-2.5"
+                      >
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-[13px] font-semibold">
+                            {plan.cuotas} pagos
+                          </span>
+                          <span className="text-sm font-bold">
+                            {formatFinancingAmount(installmentAmount)}
+                          </span>
+                        </div>
+                        <div className="mt-0.5 text-[11.5px] text-muted">
+                          Total financiado {formatFinancingAmount(totalWithSurcharge)}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

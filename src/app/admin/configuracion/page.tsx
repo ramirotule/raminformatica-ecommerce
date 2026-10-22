@@ -30,7 +30,10 @@ export default function AdminConfigPage() {
     ...config,
     currency: normalizeCurrency(config.currency),
   });
-  const [tab, setTab] = useState<"general" | "carousel">("general");
+  const [tab, setTab] = useState<
+    "general" | "getnet" | "personalCredit" | "carousel"
+  >("general");
+  const [getnetEditing, setGetnetEditing] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
@@ -51,9 +54,33 @@ export default function AdminConfigPage() {
         freeShippingFrom: Number(form.freeShippingFrom) || 0,
         shippingCost: Number(form.shippingCost) || 0,
         maxInstallments: Number(form.maxInstallments) || 1,
+        getnet: {
+          coefficient3: Number(form.getnet.coefficient3) || 1.0913,
+          coefficient6: Number(form.getnet.coefficient6) || 1.1666,
+          coefficient9: Number(form.getnet.coefficient9) || 1.2724,
+          coefficient12: Number(form.getnet.coefficient12) || 1.3659,
+          coefficient18: Number(form.getnet.coefficient18) || 1.569,
+          coefficient24: Number(form.getnet.coefficient24) || 1.795,
+          discountPct3: Number(form.getnet.discountPct3) || 0,
+          discountPct6: Number(form.getnet.discountPct6) || 0,
+          discountPct9: Number(form.getnet.discountPct9) || 0,
+          discountPct12: Number(form.getnet.discountPct12) || 0,
+          discountPct18: Number(form.getnet.discountPct18) || 43.4676,
+          discountPct24: Number(form.getnet.discountPct24) || 51.7385,
+          arancelInstallmentsPct:
+            Number(form.getnet.arancelInstallmentsPct) || 0,
+          ivaPct: Number(form.getnet.ivaPct) || 21,
+        },
+        personalCredit: {
+          surchargePct3: Number(form.personalCredit.surchargePct3) || 0,
+          surchargePct6: Number(form.personalCredit.surchargePct6) || 0,
+          surchargePct9: Number(form.personalCredit.surchargePct9) || 0,
+          surchargePct12: Number(form.personalCredit.surchargePct12) || 0,
+        },
         heroSlides: form.heroSlides
           .map((slide) => ({
             imageUrl: slide.imageUrl.trim(),
+            mobileImageUrl: (slide.mobileImageUrl ?? "").trim(),
             href: slide.href.trim() || "/catalogo",
             title: (slide.title ?? "").trim(),
           }))
@@ -72,7 +99,10 @@ export default function AdminConfigPage() {
   const addHeroSlide = () => {
     setForm((prev) => ({
       ...prev,
-      heroSlides: [...prev.heroSlides, { imageUrl: "", href: "/catalogo", title: "" }],
+      heroSlides: [
+        ...prev.heroSlides,
+        { imageUrl: "", mobileImageUrl: "", href: "/catalogo", title: "" },
+      ],
     }));
   };
 
@@ -133,6 +163,28 @@ export default function AdminConfigPage() {
           }`}
         >
           General
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("getnet")}
+          className={`cursor-pointer rounded-[9px] border px-4 py-2 text-sm font-semibold ${
+            tab === "getnet"
+              ? "border-primary bg-primary text-white"
+              : "border-border bg-surface text-foreground"
+          }`}
+        >
+          Getnet
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("personalCredit")}
+          className={`cursor-pointer rounded-[9px] border px-4 py-2 text-sm font-semibold ${
+            tab === "personalCredit"
+              ? "border-primary bg-primary text-white"
+              : "border-border bg-surface text-foreground"
+          }`}
+        >
+          Créditos personales
         </button>
         <button
           type="button"
@@ -281,7 +333,145 @@ export default function AdminConfigPage() {
             }
           />
             </section>
+
           </>
+        )}
+
+        {tab === "getnet" && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
+                Getnet
+              </h2>
+              <button
+                type="button"
+                onClick={() => setGetnetEditing((v) => !v)}
+                className="cursor-pointer rounded-[9px] border border-border bg-transparent px-3 py-1.5 text-xs font-semibold"
+              >
+                {getnetEditing ? "Bloquear edición" : "Editar"}
+              </button>
+            </div>
+            <p className="text-xs text-muted">
+              Configurá coeficientes y costos de referencia para simular cuotas.
+              Estos datos impactan en Checkout y Simulador.
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] border-collapse text-sm">
+                <thead className="bg-primary-softer text-left text-[12px] font-bold tracking-wide text-muted uppercase">
+                  <tr>
+                    <th className="px-3 py-2">Cuotas</th>
+                    <th className="px-3 py-2">Coeficiente</th>
+                    <th className="px-3 py-2">Descuento real (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { cuotas: 3, coeffKey: "coefficient3", discountKey: "discountPct3" },
+                    { cuotas: 6, coeffKey: "coefficient6", discountKey: "discountPct6" },
+                    { cuotas: 9, coeffKey: "coefficient9", discountKey: "discountPct9" },
+                    { cuotas: 12, coeffKey: "coefficient12", discountKey: "discountPct12" },
+                    { cuotas: 18, coeffKey: "coefficient18", discountKey: "discountPct18" },
+                    { cuotas: 24, coeffKey: "coefficient24", discountKey: "discountPct24" },
+                  ].map((row) => (
+                    <tr key={row.cuotas} className="border-t border-border-soft">
+                      <td className="px-3 py-2 font-semibold">{row.cuotas}</td>
+                      <td className="px-3 py-2">
+                        <input
+                          className={`${inputClass} ${!getnetEditing ? "cursor-not-allowed opacity-70" : ""}`}
+                          type="number"
+                          step="0.0001"
+                          disabled={!getnetEditing}
+                          value={form.getnet[row.coeffKey as keyof typeof form.getnet] as number}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              getnet: {
+                                ...form.getnet,
+                                [row.coeffKey]: Number(e.target.value),
+                              },
+                            })
+                          }
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          className={`${inputClass} ${!getnetEditing ? "cursor-not-allowed opacity-70" : ""}`}
+                          type="number"
+                          step="0.0001"
+                          disabled={!getnetEditing}
+                          value={form.getnet[row.discountKey as keyof typeof form.getnet] as number}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              getnet: {
+                                ...form.getnet,
+                                [row.discountKey]: Number(e.target.value),
+                              },
+                            })
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[560px] border-collapse text-sm">
+                <thead className="bg-primary-softer text-left text-[12px] font-bold tracking-wide text-muted uppercase">
+                  <tr>
+                    <th className="px-3 py-2">Costo</th>
+                    <th className="px-3 py-2">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-border-soft">
+                    <td className="px-3 py-2 font-semibold">Arancel cuotas (%)</td>
+                    <td className="px-3 py-2">
+                      <input
+                        className={`${inputClass} ${!getnetEditing ? "cursor-not-allowed opacity-70" : ""}`}
+                        type="number"
+                        step="0.01"
+                        disabled={!getnetEditing}
+                        value={form.getnet.arancelInstallmentsPct}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            getnet: {
+                              ...form.getnet,
+                              arancelInstallmentsPct: Number(e.target.value),
+                            },
+                          })
+                        }
+                      />
+                    </td>
+                  </tr>
+                  <tr className="border-t border-border-soft">
+                    <td className="px-3 py-2 font-semibold">IVA (%)</td>
+                    <td className="px-3 py-2">
+                      <input
+                        className={`${inputClass} ${!getnetEditing ? "cursor-not-allowed opacity-70" : ""}`}
+                        type="number"
+                        step="0.01"
+                        disabled={!getnetEditing}
+                        value={form.getnet.ivaPct}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            getnet: { ...form.getnet, ivaPct: Number(e.target.value) },
+                          })
+                        }
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted">
+              Tip: con el descuento real por plan, el checkout calcula un
+              ajuste sugerido para no perder contra el contado.
+            </p>
+          </section>
         )}
 
         {tab === "carousel" && (
@@ -292,6 +482,10 @@ export default function AdminConfigPage() {
           <p className="text-sm text-muted">
             Cargá imágenes y a dónde redirige cada slide. El orden que definís
             acá es exactamente el que se muestra en Home.
+          </p>
+          <p className="text-xs text-muted">
+            Recomendado: desktop 1920x900 y mobile 1080x1350 (o proporción
+            vertical similar).
           </p>
 
           <div className="space-y-5">
@@ -367,9 +561,20 @@ export default function AdminConfigPage() {
                     updateHeroSlide(i, { imageUrl: imageUrl ?? "" })
                   }
                   folder="home-slides"
-                  label="Imagen del slide"
+                  label="Imagen desktop"
                   fit="cover"
                 />
+                <div className="mt-3">
+                  <ImageUploader
+                    value={slide.mobileImageUrl || null}
+                    onChange={(mobileImageUrl) =>
+                      updateHeroSlide(i, { mobileImageUrl: mobileImageUrl ?? "" })
+                    }
+                    folder="home-slides"
+                    label="Imagen mobile (opcional)"
+                    fit="cover"
+                  />
+                </div>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <input
                     className={inputClass}
@@ -395,6 +600,61 @@ export default function AdminConfigPage() {
           >
             + Agregar slide
           </button>
+          </section>
+        )}
+
+        {tab === "personalCredit" && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-bold tracking-wide text-muted uppercase">
+              Créditos personales
+            </h2>
+            <p className="text-xs text-muted">
+              Definí el interés estimado por plan (sobre precio de contado) para
+              la simulación de crédito personal.
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[420px] border-collapse text-sm">
+                <thead className="bg-primary-softer text-left text-[12px] font-bold tracking-wide text-muted uppercase">
+                  <tr>
+                    <th className="px-3 py-2">Cuotas</th>
+                    <th className="px-3 py-2">Interés estimado (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { cuotas: 3, key: "surchargePct3" },
+                    { cuotas: 6, key: "surchargePct6" },
+                    { cuotas: 9, key: "surchargePct9" },
+                    { cuotas: 12, key: "surchargePct12" },
+                  ].map((row) => (
+                    <tr key={row.cuotas} className="border-t border-border-soft">
+                      <td className="px-3 py-2 font-semibold">{row.cuotas}</td>
+                      <td className="px-3 py-2">
+                        <input
+                          className={inputClass}
+                          type="number"
+                          step="0.01"
+                          value={
+                            form.personalCredit[
+                              row.key as keyof typeof form.personalCredit
+                            ] as number
+                          }
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              personalCredit: {
+                                ...form.personalCredit,
+                                [row.key]: Number(e.target.value),
+                              },
+                            })
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         )}
 

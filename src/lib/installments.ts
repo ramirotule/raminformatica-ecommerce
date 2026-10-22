@@ -1,14 +1,18 @@
 /**
- * Recargo por plan (% sobre el precio de contado), calculado de la tabla
- * "Total a cobrar" de GETNET (1 pago $1.809.386 → 3 cuotas $1.889.357,
- * 6 → $2.036.962, 9 → $2.248.940, 12 → $2.440.966).
+ * Recargo por plan (% sobre el precio de contado) según tabla pública de
+ * Getnet Argentina (coeficiente emisor bancario):
+ * https://www.getnet.net/ar/aranceles
+ *
+ * Nota: estos valores modelan el monto a cobrar al cliente para cuotas.
+ * El neto acreditado al comercio depende además de aranceles, IVA,
+ * modalidad/plazo de acreditación y eventuales retenciones/impuestos.
  */
 export const INSTALLMENT_PLANS = [
   { cuotas: 1, surcharge: 0 },
-  { cuotas: 3, surcharge: 4.4198 },
-  { cuotas: 6, surcharge: 12.5775 },
-  { cuotas: 9, surcharge: 24.293 },
-  { cuotas: 12, surcharge: 34.9058 },
+  { cuotas: 3, surcharge: 9.13 },
+  { cuotas: 6, surcharge: 16.66 },
+  { cuotas: 9, surcharge: 27.24 },
+  { cuotas: 12, surcharge: 36.59 },
 ];
 
 /** Valor de cada cuota (en la misma moneda que `amount`). */

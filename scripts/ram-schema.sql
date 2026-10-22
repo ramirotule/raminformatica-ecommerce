@@ -134,6 +134,8 @@ create table if not exists public.ram_store_config (
   maintenance_title text not null default 'Estamos actualizando la pagina para una mejor experiencia.',
   maintenance_message text not null default 'Disculpe las molestias.',
   hero_slides jsonb not null default '[]'::jsonb,
+  getnet_costs jsonb not null default '{"coefficient3":1.0913,"coefficient6":1.1666,"coefficient9":1.2724,"coefficient12":1.3659,"coefficient18":1.5690,"coefficient24":1.7950,"discountPct3":14.7009,"discountPct6":20.7952,"discountPct9":28.1509,"discountPct12":33.6968,"discountPct18":43.4676,"discountPct24":51.7385,"arancelInstallmentsPct":2.53,"ivaPct":21}'::jsonb,
+  personal_credit_costs jsonb not null default '{"surchargePct3":25,"surchargePct6":55,"surchargePct9":85,"surchargePct12":120}'::jsonb,
   updated_at timestamptz not null default now()
 );
 
@@ -142,7 +144,9 @@ alter table public.ram_store_config
   add column if not exists maintenance_enabled boolean not null default false,
   add column if not exists maintenance_title text not null default 'Estamos actualizando la pagina para una mejor experiencia.',
   add column if not exists maintenance_message text not null default 'Disculpe las molestias.',
-  add column if not exists hero_slides jsonb not null default '[]'::jsonb;
+  add column if not exists hero_slides jsonb not null default '[]'::jsonb,
+  add column if not exists getnet_costs jsonb not null default '{"coefficient3":1.0913,"coefficient6":1.1666,"coefficient9":1.2724,"coefficient12":1.3659,"coefficient18":1.5690,"coefficient24":1.7950,"discountPct3":14.7009,"discountPct6":20.7952,"discountPct9":28.1509,"discountPct12":33.6968,"discountPct18":43.4676,"discountPct24":51.7385,"arancelInstallmentsPct":2.53,"ivaPct":21}'::jsonb,
+  add column if not exists personal_credit_costs jsonb not null default '{"surchargePct3":25,"surchargePct6":55,"surchargePct9":85,"surchargePct12":120}'::jsonb;
 
 create table if not exists public.ram_profiles (
   id uuid primary key references auth.users (id) on delete cascade,
