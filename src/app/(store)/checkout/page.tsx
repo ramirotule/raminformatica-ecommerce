@@ -25,7 +25,7 @@ const paymentDefs: {
   {
     id: "installments",
     label: "Cuotas con interés",
-    desc: "Hasta 12 cuotas",
+    desc: "Hasta 24 cuotas",
   },
   {
     id: "transfer",
@@ -86,6 +86,16 @@ export default function CheckoutPage() {
       cuotas: 12,
       coefficient: getnet.coefficient12,
       discountPct: getnet.discountPct12,
+    },
+    {
+      cuotas: 18,
+      coefficient: getnet.coefficient18,
+      discountPct: getnet.discountPct18,
+    },
+    {
+      cuotas: 24,
+      coefficient: getnet.coefficient24,
+      discountPct: getnet.discountPct24,
     },
   ];
 
