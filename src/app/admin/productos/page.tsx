@@ -38,6 +38,7 @@ import {
 } from "@/lib/format";
 import { normalizeProductName } from "@/lib/product-name";
 import { richTextToPlain, toRichTextHtml } from "@/lib/rich-text";
+import { uploadImageAsWebp } from "@/lib/supabase/storage";
 
 const inputClass =
   "w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary";
@@ -67,6 +68,12 @@ const STORAGE_OPTIONS = [
   { value: "1 TB", label: "1 TB" },
 ];
 
+const NOTEBOOK_USAGE_OPTIONS = [
+  { value: "", label: "Sin especificar" },
+  { value: "Oficina", label: "Oficina" },
+  { value: "Gamer", label: "Gamer" },
+];
+
 const emptyForm = {
   name: "",
   brand: "",
@@ -82,6 +89,11 @@ const emptyForm = {
   colors: [] as string[],
   ram: "",
   storage: "",
+  screenSize: "",
+  processor: "",
+  operatingSystem: "",
+  gpu: "",
+  usageType: "",
   imageUrl: null as string | null,
   imageUrls: [] as string[],
   active: true,
@@ -110,7 +122,202 @@ function toTitleCase(value: string): string {
     .replace(/\b([a-záéíóúñü])/g, (m) => m.toUpperCase());
 }
 
+const MIN_COVER_IMAGE_SIDE = 700;
+const WHITE_BG_TOLERANCE = 42;
+const WHITE_BG_MAX_EDGE = 1600;
+
+async function resolveImageSize(url: string) {
+  return new Promise<{ width: number; height: number } | null>((resolve) => {
+    const img = new window.Image();
+    const timer = window.setTimeout(() => resolve(null), 4500);
+    img.onload = () => {
+      window.clearTimeout(timer);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      window.clearTimeout(timer);
+      resolve(null);
+    };
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+  });
+}
+
+function colorDistance(
+  r1: number,
+  g1: number,
+  b1: number,
+  r2: number,
+  g2: number,
+  b2: number,
+) {
+  const dr = r1 - r2;
+  const dg = g1 - g2;
+  const db = b1 - b2;
+  return Math.sqrt(dr * dr + dg * dg + db * db);
+}
+
+function fileNameFromLabel(label: string) {
+  const sanitized = label
+    .toLowerCase()
+    .replace(/[^a-z0-9áéíóúñü\s-]/gi, " ")
+    .trim()
+    .replace(/\s+/g, "-");
+  return sanitized || "product-image";
+}
+
+async function loadImageFromBlob(blob: Blob) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo cargar la imagen"));
+    };
+    img.src = url;
+  });
+}
+
+async function whitenBackgroundFile(imageUrl: string, label: string) {
+  const proxied = await fetch(
+    `/api/images/proxy?url=${encodeURIComponent(imageUrl)}`,
+  );
+  if (!proxied.ok) {
+    throw new Error("No se pudo descargar la imagen para limpiar fondo");
+  }
+  const blob = await proxied.blob();
+  const img = await loadImageFromBlob(blob);
+
+  const scale = Math.min(
+    1,
+    WHITE_BG_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight),
+  );
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas no disponible");
+
+  ctx.drawImage(img, 0, 0, width, height);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  const samplePoints: Array<[number, number]> = [
+    [0, 0],
+    [width - 1, 0],
+    [0, height - 1],
+    [width - 1, height - 1],
+    [Math.floor(width / 2), 0],
+    [Math.floor(width / 2), height - 1],
+    [0, Math.floor(height / 2)],
+    [width - 1, Math.floor(height / 2)],
+  ];
+
+  let sumR = 0;
+  let sumG = 0;
+  let sumB = 0;
+  for (const [x, y] of samplePoints) {
+    const idx = (y * width + x) * 4;
+    sumR += data[idx];
+    sumG += data[idx + 1];
+    sumB += data[idx + 2];
+  }
+  const bgR = sumR / samplePoints.length;
+  const bgG = sumG / samplePoints.length;
+  const bgB = sumB / samplePoints.length;
+
+  const visited = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let qStart = 0;
+  let qEnd = 0;
+
+  const push = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    const pos = y * width + x;
+    if (visited[pos]) return;
+    visited[pos] = 1;
+    queue[qEnd++] = pos;
+  };
+
+  for (let x = 0; x < width; x++) {
+    push(x, 0);
+    push(x, height - 1);
+  }
+  for (let y = 1; y < height - 1; y++) {
+    push(0, y);
+    push(width - 1, y);
+  }
+
+  while (qStart < qEnd) {
+    const pos = queue[qStart++];
+    const x = pos % width;
+    const y = Math.floor(pos / width);
+    const i = pos * 4;
+    const d = colorDistance(data[i], data[i + 1], data[i + 2], bgR, bgG, bgB);
+    if (d > WHITE_BG_TOLERANCE) continue;
+
+    data[i] = 255;
+    data[i + 1] = 255;
+    data[i + 2] = 255;
+
+    push(x - 1, y);
+    push(x + 1, y);
+    push(x, y - 1);
+    push(x, y + 1);
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  const outBlob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => {
+        if (!b) return reject(new Error("No se pudo generar imagen"));
+        resolve(b);
+      },
+      "image/png",
+      0.92,
+    );
+  });
+
+  return new File([outBlob], `${fileNameFromLabel(label)}-white-bg.png`, {
+    type: "image/png",
+  });
+}
+
+async function downloadExternalImageAsFile(imageUrl: string, label: string) {
+  const proxied = await fetch(
+    `/api/images/proxy?url=${encodeURIComponent(imageUrl)}`,
+  );
+  if (!proxied.ok) {
+    throw new Error("No se pudo descargar la imagen remota para guardar");
+  }
+  const blob = await proxied.blob();
+  const ext = blob.type.includes("png")
+    ? "png"
+    : blob.type.includes("webp")
+      ? "webp"
+      : "jpg";
+  return new File([blob], `${fileNameFromLabel(label)}.${ext}`, {
+    type: blob.type || "image/jpeg",
+  });
+}
+
 type Panel = "none" | "form" | "bulk" | "images" | "prices" | "supplier";
+type CoverImageCandidate = {
+  imageUrl: string;
+  thumbnailUrl: string;
+  title: string;
+  sourceUrl: string;
+  source: string;
+  width: number | null;
+  height: number | null;
+};
 
 export default function AdminProductosPage() {
   const { currency: storeCurrency, formatPrice } = useStoreCurrency();
@@ -168,11 +375,22 @@ export default function AdminProductosPage() {
   const [bulkBrand, setBulkBrand] = useState("");
   const [bulkTags, setBulkTags] = useState<string[]>([]);
   const [bulkMenuOpen, setBulkMenuOpen] = useState(false);
+  const [rowAiMenuId, setRowAiMenuId] = useState<number | null>(null);
+  const [aiDescribeBusyId, setAiDescribeBusyId] = useState<number | null>(null);
   const formPanelRef = useRef<HTMLFormElement>(null);
   const [bulkPanel, setBulkPanel] = useState<
     null | "tags" | "category" | "brand"
   >(null);
   const bulkMenuRef = useRef<HTMLDivElement>(null);
+  const [coverSearchQueueIds, setCoverSearchQueueIds] = useState<number[]>([]);
+  const [coverSearchIndex, setCoverSearchIndex] = useState(0);
+  const [coverSearchOpen, setCoverSearchOpen] = useState(false);
+  const [coverSearchLoading, setCoverSearchLoading] = useState(false);
+  const [coverSearchSaving, setCoverSearchSaving] = useState(false);
+  const [coverSearchResults, setCoverSearchResults] = useState<CoverImageCandidate[]>([]);
+  const [coverSearchQuery, setCoverSearchQuery] = useState("");
+  const [coverPreview, setCoverPreview] = useState<CoverImageCandidate | null>(null);
+  const coverSearchReqRef = useRef(0);
 
   const missingImages = useMemo(
     () => products.filter((p) => !p.imageUrl).map((p) => p.id),
@@ -367,6 +585,15 @@ export default function AdminProductosPage() {
   };
 
   const selectedIds = () => visibleSelectedIds;
+  const coverSearchCurrentId = coverSearchQueueIds[coverSearchIndex] ?? null;
+  const coverSearchProduct = useMemo(
+    () =>
+      coverSearchCurrentId == null
+        ? null
+        : products.find((p) => p.id === coverSearchCurrentId) ?? null,
+    [products, coverSearchCurrentId],
+  );
+  const coverSearchBusy = coverSearchLoading || coverSearchSaving;
 
   useEffect(() => {
     if (!bulkMenuOpen) return;
@@ -385,6 +612,24 @@ export default function AdminProductosPage() {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [bulkMenuOpen]);
+
+  useEffect(() => {
+    if (rowAiMenuId == null) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("[data-ai-actions-root]")) return;
+      setRowAiMenuId(null);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setRowAiMenuId(null);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [rowAiMenuId]);
 
   useEffect(() => {
     if (panel !== "form") return;
@@ -445,6 +690,11 @@ export default function AdminProductosPage() {
       colors: [...(p.colors ?? [])],
       ram: p.ram ?? "",
       storage: p.storage ?? "",
+      screenSize: p.screenSize ?? "",
+      processor: p.processor ?? "",
+      operatingSystem: p.operatingSystem ?? "",
+      gpu: p.gpu ?? "",
+      usageType: p.usageType ?? "",
       imageUrl: p.imageUrl,
       imageUrls: p.imageUrls?.length
         ? p.imageUrls
@@ -476,6 +726,152 @@ export default function AdminProductosPage() {
     setImageQueueIds(ids);
     setPanel("images");
   };
+
+  const buildCoverSearchQuery = (p: Product) =>
+    `${p.brand} ${p.name} ${categoryLabel(p.category)} portada producto`;
+
+  const fetchCoverCandidates = useCallback(
+    async (queryText: string) => {
+      const q = queryText.trim();
+      if (!q) return;
+      coverSearchReqRef.current += 1;
+      const reqId = coverSearchReqRef.current;
+      setCoverSearchLoading(true);
+      setCoverSearchResults([]);
+      try {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 12000);
+        const res = await fetch(`/api/images/search?q=${encodeURIComponent(q)}&limit=10`, {
+          signal: controller.signal,
+        });
+        window.clearTimeout(timeout);
+        const data = (await res.json()) as {
+          results?: CoverImageCandidate[];
+          error?: string;
+        };
+        if (!res.ok) {
+          throw new Error(data.error || "No se pudo buscar imágenes");
+        }
+        const rawResults = data.results ?? [];
+        const checked = await Promise.all(
+          rawResults.map(async (candidate) => {
+            const knownWidth = candidate.width ?? 0;
+            const knownHeight = candidate.height ?? 0;
+            if (knownWidth > 0 && knownHeight > 0) {
+              if (
+                knownWidth < MIN_COVER_IMAGE_SIDE ||
+                knownHeight < MIN_COVER_IMAGE_SIDE
+              ) {
+                return null;
+              }
+              return candidate;
+            }
+
+            const measured = await resolveImageSize(candidate.imageUrl);
+            if (!measured) return null;
+            if (
+              measured.width < MIN_COVER_IMAGE_SIDE ||
+              measured.height < MIN_COVER_IMAGE_SIDE
+            ) {
+              return null;
+            }
+            return {
+              ...candidate,
+              width: measured.width,
+              height: measured.height,
+            };
+          }),
+        );
+
+        const filtered = checked.filter(
+          (item): item is CoverImageCandidate => Boolean(item),
+        );
+        if (coverSearchReqRef.current !== reqId) return;
+        setCoverSearchResults(filtered);
+      } catch (err) {
+        if (coverSearchReqRef.current !== reqId) return;
+        setCoverSearchResults([]);
+        void notice({
+          title: "No se pudo buscar imagen",
+          message:
+            err instanceof DOMException && err.name === "AbortError"
+              ? "La búsqueda tardó demasiado. Probá una consulta más corta."
+              : err instanceof Error
+              ? err.message
+              : "Error al buscar portadas automáticas",
+        });
+      } finally {
+        if (coverSearchReqRef.current !== reqId) return;
+        setCoverSearchLoading(false);
+      }
+    },
+    [notice],
+  );
+
+  const openCoverSearch = (ids: number[]) => {
+    if (ids.length === 0) return;
+    setCoverSearchQueueIds(ids);
+    setCoverSearchIndex(0);
+    setCoverSearchOpen(true);
+  };
+
+  const closeCoverSearch = () => {
+    setCoverSearchOpen(false);
+    setCoverSearchQueueIds([]);
+    setCoverSearchIndex(0);
+    setCoverSearchResults([]);
+    setCoverSearchQuery("");
+    setCoverPreview(null);
+  };
+
+  const goNextCoverProduct = () => {
+    if (coverSearchIndex >= coverSearchQueueIds.length - 1) {
+      closeCoverSearch();
+      return;
+    }
+    setCoverSearchResults([]);
+    setCoverPreview(null);
+    setCoverSearchIndex((prev) => prev + 1);
+  };
+
+  const saveCoverForCurrent = async (
+    candidate: CoverImageCandidate,
+    options?: { whiteBackground?: boolean },
+  ) => {
+    if (!coverSearchProduct) return;
+    setCoverSearchSaving(true);
+    try {
+      const file = options?.whiteBackground
+        ? await whitenBackgroundFile(candidate.imageUrl, coverSearchProduct.name)
+        : await downloadExternalImageAsFile(
+            candidate.imageUrl,
+            coverSearchProduct.name,
+          );
+      const uploaded = await uploadImageAsWebp(file, "products");
+      const finalImageUrl = uploaded.publicUrl;
+      await updateProduct(coverSearchProduct.id, {
+        imageUrl: finalImageUrl,
+        imageUrls: [finalImageUrl],
+      });
+      goNextCoverProduct();
+    } catch (err) {
+      void notice({
+        title: "No se pudo guardar imagen",
+        message: err instanceof Error ? err.message : "Error al guardar portada",
+      });
+    } finally {
+      setCoverSearchSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!coverSearchOpen || !coverSearchProduct) return;
+    setCoverSearchResults([]);
+    setCoverPreview(null);
+    const nextQuery = buildCoverSearchQuery(coverSearchProduct);
+    setCoverSearchQuery(nextQuery);
+    void fetchCoverCandidates(nextQuery);
+  }, [coverSearchOpen, coverSearchProduct, fetchCoverCandidates]);
 
   const onCategoryFormChange = (rawValue: string) => {
     const nextValue = rawValue.trim();
@@ -585,6 +981,11 @@ export default function AdminProductosPage() {
         colors: form.colors,
         ram: form.ram.trim(),
         storage: form.storage.trim(),
+        screenSize: form.screenSize.trim(),
+        processor: form.processor.trim(),
+        operatingSystem: form.operatingSystem.trim(),
+        gpu: form.gpu.trim(),
+        usageType: form.usageType.trim(),
         imageUrl: form.imageUrls[0] ?? null,
         imageUrls: form.imageUrls,
         active: form.active,
@@ -645,6 +1046,84 @@ export default function AdminProductosPage() {
     }
   };
 
+  const buildAutoDescription = (p: Product) => {
+    const title = p.name.toLowerCase().startsWith(p.brand.toLowerCase())
+      ? p.name
+      : `${p.brand} ${p.name}`;
+    const category = categoryLabel(p.category);
+    const isNotebook =
+      p.category.toLowerCase() === "notebooks" ||
+      p.category.toLowerCase() === "macbooks";
+    const isPhone = p.category.toLowerCase() === "celulares";
+
+    const intro = isNotebook
+      ? `${title} es una excelente opción para quienes buscan rendimiento, confiabilidad y buena experiencia de uso en trabajo, estudio o entretenimiento.`
+      : isPhone
+        ? `${title} combina diseño, fluidez y prestaciones modernas para un uso diario completo, con muy buen equilibrio entre potencia y autonomía.`
+        : `${title} es una propuesta destacada dentro de la categoría ${category.toLowerCase()}, pensada para quienes priorizan calidad y rendimiento sostenido.`;
+
+    const technicalSpecs = [
+      `- Marca: ${p.brand}`,
+      `- Categoría: ${category}${p.subcategory ? ` · ${p.subcategory}` : ""}`,
+      isNotebook && p.screenSize ? `- Tamaño de pantalla: ${p.screenSize}` : "",
+      p.ram ? `- Memoria RAM: ${p.ram}` : "",
+      p.storage
+        ? isNotebook
+          ? `- Disco rígido / almacenamiento: ${p.storage}`
+          : `- Almacenamiento: ${p.storage}`
+        : "",
+      isNotebook && p.gpu ? `- Placa de video aceleradora: ${p.gpu}` : "",
+      isNotebook && p.usageType ? `- Tipo de equipo: ${p.usageType}` : "",
+      isNotebook && p.operatingSystem
+        ? `- Sistema operativo: ${p.operatingSystem}`
+        : "",
+      isNotebook && p.processor ? `- Procesador: ${p.processor}` : "",
+      p.colors?.length
+        ? `- Colores disponibles: ${p.colors.map((color) => toTitleCase(color)).join(", ")} (Consultar)`
+        : "",
+      "- Producto original con garantía oficial.",
+    ].filter(Boolean);
+
+    const sellingPoints = [
+      "Beneficios destacados:",
+      "- Excelente relación precio/rendimiento dentro de su segmento.",
+      "- Ideal para quienes buscan una compra segura y duradera.",
+      "- Soporte postventa y asesoramiento personalizado de RAM Informática.",
+    ];
+
+    const tags = p.tags?.length ? `\n\nIdeal para: ${p.tags.join(", ")}.` : "";
+
+    return toRichTextHtml(
+      `${intro}\n\nEspecificaciones técnicas:\n${technicalSpecs.join("\n")}\n\n${sellingPoints.join("\n")}\n\nConsultanos por disponibilidad, medios de pago y opciones de financiación.${tags}`,
+    );
+  };
+
+  const autoCompleteDescription = async (p: Product) => {
+    const currentDescription = richTextToPlain(p.description || "").trim();
+    if (currentDescription) {
+      const ok = await confirm({
+        title: "Reemplazar descripción",
+        message:
+          "Este producto ya tiene descripción. ¿Querés reemplazarla por una autogenerada?",
+        confirmLabel: "Reemplazar",
+      });
+      if (!ok) return;
+    }
+
+    setAiDescribeBusyId(p.id);
+    try {
+      await updateProduct(p.id, { description: buildAutoDescription(p) });
+      void notice("Descripción autocompletada.");
+    } catch (err) {
+      void notice({
+        title: "No se pudo autocompletar",
+        message: err instanceof Error ? err.message : "Error al generar descripción",
+      });
+    } finally {
+      setAiDescribeBusyId(null);
+    }
+  };
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -670,15 +1149,22 @@ export default function AdminProductosPage() {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {missingImages.length > 0 && (
-            <button
-              type="button"
-              onClick={() => openImages(missingImages)}
-              className="cursor-pointer rounded-[9px] border border-border bg-surface px-4 py-2.5 text-sm font-semibold"
-            >
-              Asignar imágenes ({missingImages.length})
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={missingImages.length === 0}
+            onClick={() => openImages(missingImages)}
+            className="cursor-pointer rounded-[9px] border border-border bg-surface px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Asignar imágenes ({missingImages.length})
+          </button>
+          <button
+            type="button"
+            disabled={missingImages.length === 0}
+            onClick={() => openCoverSearch(missingImages)}
+            className="cursor-pointer rounded-[9px] border border-border bg-surface px-4 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Buscar portada IA ({missingImages.length})
+          </button>
           <button
             type="button"
             onClick={openSupplier}
@@ -1021,6 +1507,62 @@ export default function AdminProductosPage() {
                 </div>
               )}
 
+              {(form.category === "notebooks" || form.category === "macbooks") && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    className={inputClass}
+                    placeholder="Tamaño de pantalla (ej. 15.6 pulgadas)"
+                    value={form.screenSize}
+                    onChange={(e) =>
+                      setForm({ ...form, screenSize: e.target.value })
+                    }
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="Memoria RAM (ej. 16 GB)"
+                    value={form.ram}
+                    onChange={(e) => setForm({ ...form, ram: e.target.value })}
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="Disco rígido / almacenamiento (ej. 512 GB SSD)"
+                    value={form.storage}
+                    onChange={(e) =>
+                      setForm({ ...form, storage: e.target.value })
+                    }
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="Placa de video aceleradora (ej. NVIDIA RTX 4060 o No)"
+                    value={form.gpu}
+                    onChange={(e) => setForm({ ...form, gpu: e.target.value })}
+                  />
+                  <ComboSelect
+                    value={form.usageType}
+                    options={NOTEBOOK_USAGE_OPTIONS}
+                    onChange={(usageType) => setForm({ ...form, usageType })}
+                    placeholder="Tipo de equipo"
+                    fullWidth
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="Sistema operativo (ej. Windows 11 Home)"
+                    value={form.operatingSystem}
+                    onChange={(e) =>
+                      setForm({ ...form, operatingSystem: e.target.value })
+                    }
+                  />
+                  <input
+                    className={`${inputClass} sm:col-span-2`}
+                    placeholder="Procesador (ej. Intel Core i7 13620H)"
+                    value={form.processor}
+                    onChange={(e) =>
+                      setForm({ ...form, processor: e.target.value })
+                    }
+                  />
+                </div>
+              )}
+
               <div>
                 <div className="mb-2 text-[12px] font-semibold text-foreground">
                   Colores
@@ -1068,6 +1610,178 @@ export default function AdminProductosPage() {
             >
               Cancelar
             </button>
+          </div>
+        </AdminFormModal>
+      )}
+
+      {coverSearchOpen && coverSearchProduct && (
+        <AdminFormModal
+          open
+          title={`Buscar portada IA (${coverSearchIndex + 1}/${coverSearchQueueIds.length})`}
+          onClose={closeCoverSearch}
+          onSubmit={(e) => e.preventDefault()}
+          maxWidth="3xl"
+        >
+          <div className="relative space-y-3">
+            {coverSearchBusy && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-surface/75 backdrop-blur-[1px]">
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-foreground shadow-sm">
+                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary/35 border-t-primary" />
+                  {coverSearchSaving
+                    ? "Guardando imagen seleccionada..."
+                    : "Cargando resultados..."}
+                </div>
+              </div>
+            )}
+            <div className="rounded-lg border border-border bg-background/60 p-3">
+              <p className="text-sm font-semibold">{coverSearchProduct.name}</p>
+              <p className="mt-0.5 text-[12px] text-muted">
+                {coverSearchProduct.brand} · {categoryLabel(coverSearchProduct.category)}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={coverSearchQuery}
+                onChange={(e) => setCoverSearchQuery(e.target.value)}
+                placeholder="Consulta de búsqueda"
+                className={`${inputClass} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={() => void fetchCoverCandidates(coverSearchQuery)}
+                disabled={coverSearchBusy}
+                className="cursor-pointer rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+              >
+                {coverSearchLoading ? "Buscando..." : "Buscar"}
+              </button>
+            </div>
+
+            {coverSearchResults.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted">
+                {coverSearchLoading
+                  ? "Buscando opciones de portada..."
+                  : "Sin resultados. Probá ajustar la consulta."}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {coverSearchResults.map((candidate, idx) => (
+                  <div
+                    key={`${candidate.imageUrl}-${idx}`}
+                    className="overflow-hidden rounded-lg border border-border bg-surface"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setCoverPreview(candidate)}
+                      className="block h-36 w-full cursor-zoom-in border-none bg-white p-2"
+                      aria-label={`Ampliar resultado ${idx + 1}`}
+                    >
+                      <img
+                        src={candidate.thumbnailUrl || candidate.imageUrl}
+                        alt={candidate.title || `Resultado ${idx + 1}`}
+                        className="h-full w-full object-contain object-center"
+                        loading="lazy"
+                      />
+                    </button>
+                    <div className="space-y-2 p-2.5">
+                      <p className="line-clamp-2 text-[12px] text-muted">
+                        {candidate.title || "Imagen sin título"}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={coverSearchBusy}
+                          onClick={() => {
+                            void saveCoverForCurrent(candidate);
+                          }}
+                          className="cursor-pointer rounded-md border-none bg-primary px-2.5 py-1.5 text-[12px] font-bold text-white disabled:opacity-50"
+                        >
+                          {coverSearchSaving ? "Guardando..." : "Usar esta"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={coverSearchBusy}
+                          onClick={() => {
+                            void saveCoverForCurrent(candidate, {
+                              whiteBackground: true,
+                            });
+                          }}
+                          className="cursor-pointer rounded-md border border-border bg-surface px-2.5 py-1.5 text-[12px] font-semibold text-foreground disabled:opacity-50"
+                        >
+                          Fondo blanco
+                        </button>
+                        {candidate.sourceUrl ? (
+                          <a
+                            href={candidate.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-md border border-border px-2.5 py-1.5 text-[12px] font-semibold text-foreground no-underline hover:bg-accent-soft hover:!no-underline"
+                          >
+                            Fuente
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap justify-between gap-2 border-t border-border pt-2">
+              <button
+                type="button"
+                disabled={coverSearchBusy}
+                onClick={closeCoverSearch}
+                className="cursor-pointer rounded-md border border-border bg-transparent px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                disabled={coverSearchBusy}
+                onClick={goNextCoverProduct}
+                className="cursor-pointer rounded-md border border-border bg-surface px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {coverSearchLoading && !coverSearchSaving
+                  ? "Omitiendo..."
+                  : "Omitir y siguiente"}
+              </button>
+            </div>
+
+            {coverPreview && (
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Vista previa de portada"
+                className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4"
+                onClick={() => setCoverPreview(null)}
+              >
+                <div
+                  className="w-full max-w-4xl rounded-xl border border-border bg-surface p-3 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="truncate text-sm font-semibold text-foreground">
+                      {coverPreview.title || "Vista previa"}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCoverPreview(null)}
+                      className="cursor-pointer rounded-md border border-border bg-surface px-2 py-1 text-xs font-semibold"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                  <div className="flex h-[70vh] max-h-[680px] items-center justify-center rounded-lg bg-white p-3">
+                    <img
+                      src={coverPreview.imageUrl}
+                      alt={coverPreview.title || "Vista previa portada"}
+                      className="h-full w-full object-contain object-center"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </AdminFormModal>
       )}
@@ -1155,6 +1869,18 @@ export default function AdminProductosPage() {
                           setBulkMenuOpen(false);
                           await updateProducts(selectedIds(), {
                             featured: true,
+                          });
+                        })
+                      }
+                    />
+                    <BulkMenuItem
+                      icon={<StarOffIcon />}
+                      label="Quitar destacado"
+                      onClick={() =>
+                        void runBulk(async () => {
+                          setBulkMenuOpen(false);
+                          await updateProducts(selectedIds(), {
+                            featured: false,
                           });
                         })
                       }
@@ -1635,13 +2361,55 @@ export default function AdminProductosPage() {
                   {p.active ? "Activo" : "Inactivo"}
                 </button>
               </div>
-              <div className="flex gap-1.5 md:justify-end">
+              <div
+                data-ai-actions-root
+                className="relative flex gap-1.5 md:justify-end"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRowAiMenuId((prev) => (prev === p.id ? null : p.id))
+                  }
+                  aria-label={`Opciones IA para ${p.name}`}
+                  title="Opciones IA"
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-[#D4A017] hover:bg-accent-soft"
+                >
+                  {aiDescribeBusyId === p.id ? (
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary/35 border-t-primary" />
+                  ) : (
+                    <SparklesIcon />
+                  )}
+                </button>
+                {rowAiMenuId === p.id && (
+                  <div className="absolute top-9 right-0 z-20 w-52 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-[0_12px_26px_rgba(0,0,0,0.16)]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRowAiMenuId(null);
+                        openCoverSearch([p.id]);
+                      }}
+                      className="w-full cursor-pointer border-none bg-transparent px-3 py-2 text-left text-[12.5px] font-medium text-foreground hover:bg-accent-soft"
+                    >
+                      Buscar portada IA
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRowAiMenuId(null);
+                        void autoCompleteDescription(p);
+                      }}
+                      className="w-full cursor-pointer border-none bg-transparent px-3 py-2 text-left text-[12.5px] font-medium text-foreground hover:bg-accent-soft"
+                    >
+                      Autocompletar descripción
+                    </button>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => openEdit(p)}
                   aria-label={`Editar ${p.name}`}
                   title="Editar"
-                  className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-foreground hover:bg-accent-soft"
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-foreground hover:bg-accent-soft"
                 >
                   <EditIcon />
                 </button>
@@ -1666,6 +2434,11 @@ export default function AdminProductosPage() {
                           colors: [...(p.colors ?? [])],
                           ram: p.ram ?? "",
                           storage: p.storage ?? "",
+                          screenSize: p.screenSize ?? "",
+                          processor: p.processor ?? "",
+                          operatingSystem: p.operatingSystem ?? "",
+                          gpu: p.gpu ?? "",
+                          usageType: p.usageType ?? "",
                           imageUrl: p.imageUrl,
                           imageUrls: [...(p.imageUrls ?? [])],
                           active: false,
@@ -1683,7 +2456,7 @@ export default function AdminProductosPage() {
                   }}
                   aria-label={`Clonar ${p.name}`}
                   title="Clonar"
-                  className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-foreground hover:bg-accent-soft"
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-foreground hover:bg-accent-soft"
                 >
                   <CloneIcon />
                 </button>
@@ -1716,7 +2489,7 @@ export default function AdminProductosPage() {
                   }}
                   aria-label={`Eliminar ${p.name}`}
                   title="Eliminar"
-                  className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-sale hover:bg-danger-soft"
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-surface text-sale hover:bg-danger-soft"
                 >
                   <TrashIcon />
                 </button>
@@ -1850,6 +2623,15 @@ function StarIcon() {
   );
 }
 
+function StarOffIcon() {
+  return (
+    <svg {...iconProps()}>
+      <path d="m12 3 2.7 5.5 6 .9-4.4 4.3 1 6L12 16.9 6.7 19.7l1-6L3.4 9.4l6-.9L12 3z" />
+      <path d="M4 4l16 16" />
+    </svg>
+  );
+}
+
 function TagIcon() {
   return (
     <svg {...iconProps()}>
@@ -1893,6 +2675,18 @@ function ImageIcon() {
       <rect x="3" y="4" width="18" height="16" rx="2" />
       <circle cx="9" cy="10" r="1.5" />
       <path d="m21 16-5-5-9 9" />
+    </svg>
+  );
+}
+
+function SparklesIcon() {
+  return (
+    <svg {...iconProps()}>
+      <path d="M12 3 13.8 7.2 18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8L12 3z" />
+      <path d="M19 3v4" />
+      <path d="M21 5h-4" />
+      <path d="M4 14v3" />
+      <path d="M5.5 15.5h-3" />
     </svg>
   );
 }

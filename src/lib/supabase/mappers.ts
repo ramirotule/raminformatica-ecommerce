@@ -25,6 +25,11 @@ export type ProductRow = {
   colors: string[] | null;
   ram: string | null;
   storage: string | null;
+  screen_size: string | null;
+  processor: string | null;
+  operating_system: string | null;
+  gpu: string | null;
+  usage_type: string | null;
   image_url: string | null;
   image_urls: string[] | null;
   active: boolean | null;
@@ -127,6 +132,11 @@ export function mapProduct(row: ProductRow): Product {
     colors: row.colors ?? [],
     ram: row.ram ?? "",
     storage: row.storage ?? "",
+    screenSize: row.screen_size ?? "",
+    processor: row.processor ?? "",
+    operatingSystem: row.operating_system ?? "",
+    gpu: row.gpu ?? "",
+    usageType: row.usage_type ?? "",
     imageUrl:
       row.image_url ??
       (row.image_urls && row.image_urls.length > 0 ? row.image_urls[0] : null),
@@ -158,6 +168,11 @@ export function toProductInsert(input: {
   colors?: string[];
   ram?: string;
   storage?: string;
+  screenSize?: string;
+  processor?: string;
+  operatingSystem?: string;
+  gpu?: string;
+  usageType?: string;
   imageUrl?: string | null;
   imageUrls?: string[];
   active?: boolean;
@@ -191,6 +206,11 @@ export function toProductInsert(input: {
     colors: input.colors ?? [],
     ram: input.ram ?? "",
     storage: input.storage ?? "",
+    screen_size: input.screenSize ?? "",
+    processor: input.processor ?? "",
+    operating_system: input.operatingSystem ?? "",
+    gpu: input.gpu ?? "",
+    usage_type: input.usageType ?? "",
     image_url: urls[0] ?? null,
     image_urls: urls,
     active: input.active ?? true,

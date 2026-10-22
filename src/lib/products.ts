@@ -21,6 +21,16 @@ export type Product = {
   ram: string;
   /** Almacenamiento, ej. "256 GB". */
   storage: string;
+  /** Tamaño de pantalla, ej. "15.6 pulgadas". */
+  screenSize?: string;
+  /** Procesador principal, ej. "Intel Core i7 13620H". */
+  processor?: string;
+  /** Sistema operativo, ej. "Windows 11 Home". */
+  operatingSystem?: string;
+  /** GPU o aceleradora, ej. "NVIDIA RTX 4060" o "No". */
+  gpu?: string;
+  /** Perfil de uso, ej. "Oficina" o "Gamer". */
+  usageType?: string;
   imageUrl: string | null;
   /** Galería completa; imageUrl suele ser la primera. */
   imageUrls: string[];
@@ -576,6 +586,11 @@ export function productMatchesQuery(product: Product, query: string) {
     categoryLabels[product.category],
     product.ram,
     product.storage,
+    product.screenSize ?? "",
+    product.processor ?? "",
+    product.operatingSystem ?? "",
+    product.gpu ?? "",
+    product.usageType ?? "",
     ...tags,
     ...colors,
   ]

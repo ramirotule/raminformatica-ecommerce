@@ -75,14 +75,23 @@ export function MultiImageUploader({
             key={`${src}-${i}`}
             className="group relative h-28 w-28 overflow-hidden rounded-lg border border-border bg-white"
           >
-            <Image
-              src={src}
-              alt={`Foto ${i + 1}`}
-              fill
-              sizes="112px"
-              className="object-contain"
-              style={{ objectFit: "contain" }}
-            />
+            {/^https?:\/\//i.test(src) ? (
+              <img
+                src={src}
+                alt={`Foto ${i + 1}`}
+                loading="lazy"
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <Image
+                src={src}
+                alt={`Foto ${i + 1}`}
+                fill
+                sizes="112px"
+                className="object-contain"
+                style={{ objectFit: "contain" }}
+              />
+            )}
             <div className="absolute inset-x-0 bottom-0 flex gap-1 bg-foreground/75 p-1 opacity-0 transition-opacity group-hover:opacity-100">
               {i > 0 && (
                 <button

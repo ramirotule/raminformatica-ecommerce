@@ -27,6 +27,7 @@ export function ProductImage({
   const meta = productMeta(product);
   const alt = label ?? product.name;
   const src = productImages(product)[0] ?? null;
+  const isExternalSrc = !!src && /^https?:\/\//i.test(src);
 
   return (
     <div
@@ -40,15 +41,24 @@ export function ProductImage({
       {src ? (
         <span className="absolute inset-2.5 flex items-center justify-center">
           <span className="relative block aspect-square h-full max-w-full">
-            <Image
-              src={src}
-              alt={alt}
-              fill
-              priority={priority}
-              sizes={sizes}
-              className="object-contain object-center p-1"
-              style={{ objectFit: "contain", objectPosition: "center" }}
-            />
+            {isExternalSrc ? (
+              <img
+                src={src}
+                alt={alt}
+                loading={priority ? "eager" : "lazy"}
+                className="h-full w-full object-contain object-center p-1"
+              />
+            ) : (
+              <Image
+                src={src}
+                alt={alt}
+                fill
+                priority={priority}
+                sizes={sizes}
+                className="object-contain object-center p-1"
+                style={{ objectFit: "contain", objectPosition: "center" }}
+              />
+            )}
           </span>
         </span>
       ) : (

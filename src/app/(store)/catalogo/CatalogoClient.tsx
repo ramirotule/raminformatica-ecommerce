@@ -40,6 +40,7 @@ export default function CatalogoClient() {
     (searchParams.get("categoria") as CategoryId | null) ?? "all";
   const initialQuery = searchParams.get("q") ?? "";
   const initialBrand = searchParams.get("marca") ?? "all";
+  const featuredOnly = searchParams.get("destacados") === "1";
   const products = useCatalogStore((s) => s.products);
   const storeCategories = useCategoriesStore((s) => s.categories);
   const storeSubcategories = useSubcategoriesStore((s) => s.subcategories);
@@ -65,6 +66,10 @@ export default function CatalogoClient() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
+    if (featuredOnly) {
+      router.replace("/destacados");
+      return;
+    }
     setQuery(searchParams.get("q") ?? "");
     const cat = searchParams.get("categoria");
     setCategory(cat && cat !== "all" ? cat : "all");
@@ -78,7 +83,7 @@ export default function CatalogoClient() {
       (b) => b.toLowerCase() === marca.toLowerCase(),
     );
     setBrand(match ?? marca);
-  }, [searchParams, brands]);
+  }, [searchParams, brands, featuredOnly, router]);
 
   const pushCatalogUrl = (next: {
     category?: CategoryId | "all";

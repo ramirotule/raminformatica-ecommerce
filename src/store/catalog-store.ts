@@ -108,6 +108,12 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     if (input.colors != null) patch.colors = input.colors;
     if (input.ram != null) patch.ram = input.ram;
     if (input.storage != null) patch.storage = input.storage;
+    if (input.screenSize != null) patch.screen_size = input.screenSize;
+    if (input.processor != null) patch.processor = input.processor;
+    if (input.operatingSystem != null)
+      patch.operating_system = input.operatingSystem;
+    if (input.gpu != null) patch.gpu = input.gpu;
+    if (input.usageType != null) patch.usage_type = input.usageType;
     if (input.imageUrl !== undefined || input.imageUrls !== undefined) {
       const urls = [
         ...new Set(

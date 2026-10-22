@@ -94,13 +94,45 @@ export default function ProductoPage() {
 
   const isTester = product.tags?.some((tag) => tag.toLowerCase() === "tester") ?? false;
   const warranty = isTester ? "1 mes" : "6 meses";
+  const isCelularCategory = product.category.toLowerCase() === "celulares";
+  const isNotebookCategory =
+    product.category.toLowerCase() === "notebooks" ||
+    product.category.toLowerCase() === "macbooks";
+  const sharedSpecs = productSpecs.filter((s) => {
+    if (s.k === "Garantía") return false;
+    if (!isCelularCategory && (s.k === "Pantalla" || s.k === "Batería")) return false;
+    return true;
+  });
+  const notebookSpecs = isNotebookCategory
+    ? [
+        ...(product.screenSize
+          ? [{ k: "Tamaño de Pantalla", v: product.screenSize }]
+          : []),
+        ...(product.ram ? [{ k: "Memoria RAM", v: product.ram }] : []),
+        ...(product.storage
+          ? [{ k: "Disco Rígido / Almacenamiento", v: product.storage }]
+          : []),
+        ...(product.gpu
+          ? [{ k: "Placa de Video Aceleradora", v: product.gpu }]
+          : []),
+        ...(product.usageType ? [{ k: "Tipo", v: product.usageType }] : []),
+        ...(product.operatingSystem
+          ? [{ k: "Sistema Operativo", v: product.operatingSystem }]
+          : []),
+        ...(product.processor ? [{ k: "Procesador", v: product.processor }] : []),
+      ]
+    : [];
   const specs = [
-    ...(product.ram ? [{ k: "Memoria RAM", v: product.ram }] : []),
-    ...(product.storage ? [{ k: "Almacenamiento", v: product.storage }] : []),
+    ...(isNotebookCategory
+      ? notebookSpecs
+      : [
+          ...(product.ram ? [{ k: "Memoria RAM", v: product.ram }] : []),
+          ...(product.storage ? [{ k: "Almacenamiento", v: product.storage }] : []),
+        ]),
     ...(product.colors?.length
       ? [{ k: "Colores", v: product.colors.join(" · ") }]
       : []),
-    ...productSpecs.filter((s) => s.k !== "Garantía"),
+    ...sharedSpecs,
     { k: "Garantía", v: warranty },
   ];
 

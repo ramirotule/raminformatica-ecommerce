@@ -37,7 +37,7 @@ export default function HomePage() {
               Ver catálogo
             </Link>
             <Link
-              href="/catalogo?destacados=1"
+              href="/destacados"
               className="rounded-[9px] border border-border bg-surface px-[22px] py-3 text-[14px] font-semibold text-foreground no-underline hover:bg-accent-soft hover:!no-underline"
             >
               Ver destacados

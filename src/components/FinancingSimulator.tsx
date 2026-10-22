@@ -112,7 +112,7 @@ export function FinancingSimulator({
   const compactLayout = !showHeader;
 
   return (
-    <div className={showHeader ? "py-10 md:py-14" : "py-1"}>
+    <div className={showHeader ? "pt-3 pb-10 md:pt-4 md:pb-14" : "py-1"}>
       {showHeader && (
         <div className="mb-8 max-w-[40rem]">
           <p className="mb-3 text-[13px] font-bold tracking-wider text-primary uppercase">
@@ -221,7 +221,7 @@ export function FinancingSimulator({
       )}
 
       {amount > 0 && (
-        <div className={`mt-6 space-y-3 ${compactLayout ? "max-w-[56rem]" : "max-w-[68rem]"}`}>
+        <div className={`mt-4 space-y-3 ${compactLayout ? "max-w-[56rem]" : "max-w-[68rem]"}`}>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"

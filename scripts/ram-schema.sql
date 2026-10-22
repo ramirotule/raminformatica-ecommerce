@@ -76,6 +76,11 @@ create table if not exists public.ram_products (
   colors text[] not null default '{}',
   ram text not null default '',
   storage text not null default '',
+  screen_size text not null default '',
+  processor text not null default '',
+  operating_system text not null default '',
+  gpu text not null default '',
+  usage_type text not null default '',
   image_url text,
   subcategory text not null default '',
   provider text not null default '',
@@ -86,6 +91,13 @@ create table if not exists public.ram_products (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.ram_products
+  add column if not exists screen_size text not null default '',
+  add column if not exists processor text not null default '',
+  add column if not exists operating_system text not null default '',
+  add column if not exists gpu text not null default '',
+  add column if not exists usage_type text not null default '';
 
 create table if not exists public.ram_providers (
   id uuid primary key default gen_random_uuid(),

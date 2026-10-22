@@ -23,6 +23,18 @@ function FitImage({
   sizes: string;
   priority?: boolean;
 }) {
+  const isExternalSrc = /^https?:\/\//i.test(src);
+  if (isExternalSrc) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        className="h-full w-full object-contain object-center"
+      />
+    );
+  }
+
   return (
     <Image
       src={src}
