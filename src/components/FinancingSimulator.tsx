@@ -89,8 +89,14 @@ export function FinancingSimulator({
       discountPct: getnet.discountPct24,
     },
   ];
-  const personalCreditWhatsappHref =
-    "https://api.whatsapp.com/send/?phone=5492954227622&text=Quisiera+averiguar+sobre+las+condiciones+para+los+creditos+personales.&type=phone_number&app_absent=0";
+  const personalCreditMessage = selected
+    ? `Me interesa averiguar comprar este producto "${selected.name}" con credito personal de la casa, quisiera mas informacion.`
+    : "Quisiera averiguar sobre las condiciones para los creditos personales.";
+  const whatsappPhoneDigits = supportPhone.replace(/\D/g, "");
+  const whatsappPhone = whatsappPhoneDigits.startsWith("54")
+    ? whatsappPhoneDigits
+    : `54${whatsappPhoneDigits}`;
+  const personalCreditWhatsappHref = `https://api.whatsapp.com/send/?phone=${whatsappPhone}&text=${encodeURIComponent(personalCreditMessage)}&type=phone_number&app_absent=0`;
   const showControls = showHeader || !initialProductId;
   const compactLayout = !showHeader;
 

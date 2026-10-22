@@ -7,6 +7,8 @@ import { CheckoutLoginForm } from "@/components/CheckoutLoginForm";
 import { useDialog } from "@/components/DialogProvider";
 import { OrderSummary } from "@/components/OrderSummary";
 import { useCurrency } from "@/hooks/useCurrency";
+import { formatAmount, parseMoneyInput } from "@/lib/format";
+import { whatsappHref } from "@/lib/social";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCatalogStore } from "@/store/catalog-store";
@@ -43,8 +45,9 @@ const stepDefs = [
 export default function CheckoutPage() {
   const { notice } = useDialog();
   const router = useRouter();
-  const { formatPrice, formatArs } = useCurrency();
+  const { formatPrice, formatArs, blueVenta } = useCurrency();
   const getnet = useStoreConfig((s) => s.config.getnet);
+  const supportPhone = useStoreConfig((s) => s.config.supportPhone);
   const user = useAuthStore((s) => s.user);
   const items = useCartStore((s) => s.items);
   const subtotal = useCartStore((s) => s.subtotal());
@@ -64,6 +67,9 @@ export default function CheckoutPage() {
   } = useCheckoutStore();
 
   const [showLogin, setShowLogin] = useState(false);
+  const [selectedInstallments, setSelectedInstallments] = useState(6);
+  const [rawDownPaymentArs, setRawDownPaymentArs] = useState("");
+  const [rawDownPaymentUsd, setRawDownPaymentUsd] = useState("");
   const formatFinancingAmount = (amountUsd: number) =>
     formatArs(amountUsd) ?? formatPrice(amountUsd);
   const installmentOptions = [
@@ -98,6 +104,30 @@ export default function CheckoutPage() {
       discountPct: getnet.discountPct24,
     },
   ];
+  const downPaymentArs = parseMoneyInput(rawDownPaymentArs);
+  const downPaymentUsd = parseMoneyInput(rawDownPaymentUsd);
+  const cashAdvanceUsd =
+    (blueVenta ? downPaymentArs / blueVenta : downPaymentArs) + downPaymentUsd;
+  const downPayment = payment === "installments" ? Math.min(cashAdvanceUsd, subtotal) : 0;
+  const financedSubtotal = Math.max(0, subtotal - downPayment);
+
+  const calculateInstallment = (baseUsd: number, plan: (typeof installmentOptions)[number]) => {
+    const receiveRatio = Math.max(0, 1 - plan.discountPct / 100);
+    const extraPct =
+      receiveRatio > 0 && plan.coefficient > 0
+        ? Math.max(0, (1 / (plan.coefficient * receiveRatio) - 1) * 100)
+        : 0;
+    const adjustedCoefficient = plan.coefficient * (1 + extraPct / 100);
+    const totalWithSurcharge = baseUsd * adjustedCoefficient;
+    return {
+      totalWithSurcharge,
+      installmentAmount: totalWithSurcharge / plan.cuotas,
+    };
+  };
+
+  const selectedPlan =
+    installmentOptions.find((plan) => plan.cuotas === selectedInstallments) ??
+    installmentOptions[0];
 
   useEffect(() => {
     if (user) setShowLogin(false);
@@ -105,16 +135,49 @@ export default function CheckoutPage() {
 
   const placeOrder = async () => {
     const result = await confirmOrder();
-    if (!result.ok) {
-      if (result.needsAuth) {
-        setShowLogin(true);
-        return;
+    if (result.ok) {
+      const paymentText =
+        payment === "installments"
+          ? (() => {
+              const selectedInstallment = calculateInstallment(financedSubtotal, selectedPlan);
+              const downPaymentLine =
+                downPayment > 0 ? ` con entrega de ${formatFinancingAmount(downPayment)}` : "";
+              return `Cuotas Getnet: ${selectedPlan.cuotas} cuotas de ${formatFinancingAmount(selectedInstallment.installmentAmount)} (total financiado ${formatFinancingAmount(selectedInstallment.totalWithSurcharge)})${downPaymentLine}`;
+            })()
+          : paymentDefs.find((pm) => pm.id === payment)?.label ?? "A convenir";
+
+      const itemsText = items
+        .map((c) => {
+          const product = products.find((p) => p.id === c.id);
+          if (!product) return null;
+          return `- ${c.qty}x ${product.name}`;
+        })
+        .filter(Boolean)
+        .join("\n");
+
+      const message = [
+        "Hola! Quiero confirmar esta compra:",
+        itemsText,
+        `Total productos: ${formatFinancingAmount(subtotal)}`,
+        `Forma de pago: ${paymentText}`,
+        `Cliente: ${shipping.name || "Sin nombre"}`,
+        `Telefono: ${shipping.phone || "Sin telefono"}`,
+      ].join("\n");
+
+      if (typeof window !== "undefined") {
+        window.location.href = whatsappHref(supportPhone, message);
       }
-      void notice({
-        title: "No se pudo confirmar",
-        message: result.error ?? "Error al confirmar la compra",
-      });
+      return;
     }
+
+    if (result.needsAuth) {
+      setShowLogin(true);
+      return;
+    }
+    void notice({
+      title: "No se pudo confirmar",
+      message: result.error ?? "Error al confirmar la compra",
+    });
   };
 
   if (items.length === 0 && !orderConfirmed) {
@@ -235,6 +298,51 @@ export default function CheckoutPage() {
                   );
                 })}
               </div>
+              {payment === "installments" && (
+                <div className="mb-5 rounded-xl border border-border bg-background p-4">
+                  <div className="mb-3 text-[13px] font-bold">
+                    Entrega en efectivo + resto en cuotas
+                  </div>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <label className="text-[12px] font-semibold text-muted">
+                      Entrega $ (opcional)
+                      <div className="relative mt-1.5">
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-muted">
+                          $
+                        </span>
+                        <input
+                          value={rawDownPaymentArs ? formatAmount(downPaymentArs) : ""}
+                          onChange={(e) => setRawDownPaymentArs(e.target.value)}
+                          placeholder="0"
+                          inputMode="numeric"
+                          className="w-full rounded-lg border border-border bg-surface py-2.5 pr-3 pl-8 text-sm outline-none focus:border-primary"
+                        />
+                      </div>
+                    </label>
+                    <label className="text-[12px] font-semibold text-muted">
+                      Entrega US$ (opcional)
+                      <div className="relative mt-1.5">
+                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-semibold text-muted">
+                          US$
+                        </span>
+                        <input
+                          value={rawDownPaymentUsd ? formatAmount(downPaymentUsd) : ""}
+                          onChange={(e) => setRawDownPaymentUsd(e.target.value)}
+                          placeholder="0"
+                          inputMode="numeric"
+                          className="w-full rounded-lg border border-border bg-surface py-2.5 pr-3 pl-11 text-sm outline-none focus:border-primary"
+                        />
+                      </div>
+                    </label>
+                  </div>
+                  {downPayment > 0 && (
+                    <div className="mt-3 rounded-lg border border-border-soft bg-surface px-3 py-2 text-[12.5px] text-muted">
+                      Entrega: <strong>{formatFinancingAmount(downPayment)}</strong> · Resto a financiar:{" "}
+                      <strong>{formatFinancingAmount(financedSubtotal)}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex gap-3">
                 <button
                   type="button"
@@ -304,6 +412,24 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
+                <div className="mb-5 rounded-lg border border-border-soft bg-background px-3.5 py-3 text-[13px] text-muted">
+                  <div>
+                    Forma de pago:{" "}
+                    <strong className="text-foreground">
+                      {payment === "installments"
+                        ? `${selectedPlan.cuotas} cuotas con Getnet`
+                        : paymentDefs.find((pm) => pm.id === payment)?.label}
+                    </strong>
+                  </div>
+                  {payment === "installments" && downPayment > 0 && (
+                    <div className="mt-1">
+                      Entrega en efectivo:{" "}
+                      <strong className="text-foreground">
+                        {formatFinancingAmount(downPayment)}
+                      </strong>
+                    </div>
+                  )}
+                </div>
 
                 {showLogin && !user ? (
                   <CheckoutLoginForm
@@ -351,31 +477,44 @@ export default function CheckoutPage() {
               <div className="mb-2 text-[13px] font-bold">
                 Opciones de financiación en pesos
               </div>
+              {downPayment > 0 && (
+                <div className="mb-3 rounded-lg border border-border-soft bg-background px-3 py-2 text-[12px] text-muted">
+                  Entrega: <strong>{formatFinancingAmount(downPayment)}</strong> · A financiar:{" "}
+                  <strong>{formatFinancingAmount(financedSubtotal)}</strong>
+                </div>
+              )}
               <div className="space-y-2">
                 {installmentOptions.map((plan) => {
-                    const receiveRatio = Math.max(0, 1 - plan.discountPct / 100);
-                    const extraPct =
-                      receiveRatio > 0 && plan.coefficient > 0
-                        ? Math.max(0, (1 / (plan.coefficient * receiveRatio) - 1) * 100)
-                        : 0;
-                    const adjustedCoefficient = plan.coefficient * (1 + extraPct / 100);
-                    const totalWithSurcharge = subtotal * adjustedCoefficient;
-                    const installmentAmount = totalWithSurcharge / plan.cuotas;
+                    const calc = calculateInstallment(financedSubtotal, plan);
+                    const active = selectedInstallments === plan.cuotas;
                     return (
                       <div
                         key={plan.cuotas}
-                        className="rounded-lg border border-border-soft bg-background px-3 py-2.5"
+                        className={`rounded-lg border px-3 py-2.5 ${
+                          active
+                            ? "border-primary bg-primary-soft"
+                            : "border-border-soft bg-background"
+                        }`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedInstallments(plan.cuotas)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedInstallments(plan.cuotas);
+                          }
+                        }}
                       >
                         <div className="flex items-baseline justify-between gap-3">
                           <span className="text-[13px] font-semibold">
                             {plan.cuotas} pagos
                           </span>
                           <span className="text-sm font-bold">
-                            {formatFinancingAmount(installmentAmount)}
+                            {formatFinancingAmount(calc.installmentAmount)}
                           </span>
                         </div>
                         <div className="mt-0.5 text-[11.5px] text-muted">
-                          Total financiado {formatFinancingAmount(totalWithSurcharge)}
+                          Total financiado {formatFinancingAmount(calc.totalWithSurcharge)}
                         </div>
                       </div>
                     );
