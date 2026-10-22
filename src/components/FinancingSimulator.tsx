@@ -19,7 +19,6 @@ export function FinancingSimulator({
 }: Props) {
   const products = useCatalogStore((s) => s.products);
   const getnet = useStoreConfig((s) => s.config.getnet);
-  const personalCredit = useStoreConfig((s) => s.config.personalCredit);
   const supportPhone = useStoreConfig((s) => s.config.supportPhone);
   const { formatPrice, blueVenta } = useCurrency();
   const [productId, setProductId] = useState(initialProductId);
@@ -91,19 +90,6 @@ export function FinancingSimulator({
       discountPct: getnet.discountPct24,
     },
   ];
-  const personalInstallmentPlans = [
-    { cuotas: 1, surchargePct: 0 },
-    { cuotas: 3, surchargePct: personalCredit.surchargePct3 },
-    { cuotas: 6, surchargePct: personalCredit.surchargePct6 },
-    { cuotas: 9, surchargePct: personalCredit.surchargePct9 },
-    { cuotas: 12, surchargePct: personalCredit.surchargePct12 },
-  ].map((plan) => ({
-    cuotas: plan.cuotas,
-    coefficient: 1 + plan.surchargePct / 100,
-    discountPct: 0,
-  }));
-  const installmentPlans =
-    financingMethod === "getnet" ? getnetInstallmentPlans : personalInstallmentPlans;
   const personalCreditWhatsappHref = whatsappHref(
     supportPhone,
     `Me interesa comprar el producto ${selected?.name ?? "XX"} con un credito personal.`,
@@ -219,6 +205,25 @@ export function FinancingSimulator({
         </label>
       </div>
       )}
+      {showHeader && (
+        <div className="mt-3 flex max-w-[68rem] flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setFinancingMethod("personal")}
+            className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-900 hover:border-amber-400 hover:bg-amber-100"
+          >
+            Crédito personal de la casa
+          </button>
+          <a
+            href={personalCreditWhatsappHref}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-lg border border-primary/35 bg-primary-soft px-3.5 py-2 text-xs font-semibold text-primary no-underline hover:bg-primary hover:text-white hover:!no-underline"
+          >
+            Consultar por WhatsApp
+          </a>
+        </div>
+      )}
 
       {amount > 0 && (
         <div className={`mt-4 space-y-3 ${compactLayout ? "max-w-[56rem]" : "max-w-[68rem]"}`}>
@@ -240,13 +245,18 @@ export function FinancingSimulator({
             <button
               type="button"
               onClick={() => setFinancingMethod("personal")}
-              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold ${
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 financingMethod === "personal"
-                  ? "border-primary bg-primary-soft text-primary"
-                  : "border-border bg-surface text-muted"
+                  ? "border-amber-500 bg-amber-100 text-amber-900 shadow-[0_0_0_1px_rgba(245,158,11,0.35)]"
+                  : "border-amber-300 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100"
               }`}
             >
-              Crédito personal
+              <span className="inline-flex items-center gap-1.5">
+                Crédito personal
+                <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] leading-none font-bold text-amber-800">
+                  destacado
+                </span>
+              </span>
             </button>
           </div>
           {downPayment > 0 && (
@@ -255,46 +265,48 @@ export function FinancingSimulator({
               <strong>{money(financed)}</strong>
             </div>
           )}
-          <div
-            className={`grid grid-cols-1 gap-2.5 ${compactLayout ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}
-          >
-            {installmentPlans.map((plan) => {
-              const receiveRatio =
-                plan.cuotas === 1
-                  ? 1
-                  : Math.max(0, 1 - (plan.discountPct ?? 0) / 100);
-              const extraPct =
-                plan.cuotas === 1
-                  ? 0
-                  : receiveRatio > 0 && plan.coefficient > 0
-                    ? Math.max(0, (1 / (plan.coefficient * receiveRatio) - 1) * 100)
-                    : 0;
-              const effectiveCoefficient = plan.coefficient * (1 + extraPct / 100);
-              const total = financed * effectiveCoefficient;
-              const cuota = total / plan.cuotas;
-              return (
-                <div
-                  key={plan.cuotas}
-                  className={`rounded-xl border border-border bg-surface ${
-                    compactLayout ? "px-4 py-3" : "px-5 py-4"
-                  }`}
-                >
-                  <div className="text-[12.5px] text-muted">
-                    {plan.cuotas === 1 ? "Contado" : `Total financiado ${money(total)}`}
-                  </div>
+          {financingMethod === "getnet" && (
+            <div
+              className={`grid grid-cols-1 gap-2.5 ${compactLayout ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}
+            >
+              {getnetInstallmentPlans.map((plan) => {
+                const receiveRatio =
+                  plan.cuotas === 1
+                    ? 1
+                    : Math.max(0, 1 - (plan.discountPct ?? 0) / 100);
+                const extraPct =
+                  plan.cuotas === 1
+                    ? 0
+                    : receiveRatio > 0 && plan.coefficient > 0
+                      ? Math.max(0, (1 / (plan.coefficient * receiveRatio) - 1) * 100)
+                      : 0;
+                const effectiveCoefficient = plan.coefficient * (1 + extraPct / 100);
+                const total = financed * effectiveCoefficient;
+                const cuota = total / plan.cuotas;
+                return (
                   <div
-                    className={`mt-1 text-[18px] leading-tight font-bold ${
-                      plan.cuotas === 1 ? "text-foreground" : "text-primary"
+                    key={plan.cuotas}
+                    className={`rounded-xl border border-border bg-surface ${
+                      compactLayout ? "px-4 py-3" : "px-5 py-4"
                     }`}
                   >
-                    {plan.cuotas === 1
-                      ? money(total)
-                      : `${plan.cuotas} cuotas de ${money(cuota)}`}
+                    <div className="text-[12.5px] text-muted">
+                      {plan.cuotas === 1 ? "Contado" : `Total financiado ${money(total)}`}
+                    </div>
+                    <div
+                      className={`mt-1 text-[18px] leading-tight font-bold ${
+                        plan.cuotas === 1 ? "text-foreground" : "text-primary"
+                      }`}
+                    >
+                      {plan.cuotas === 1
+                        ? money(total)
+                        : `${plan.cuotas} cuotas de ${money(cuota)}`}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
           {financingMethod === "getnet" ? (
             <div className="flex items-center gap-3 rounded-xl border border-border bg-accent-soft px-4 py-3 text-[13px] text-body-text">
               <span className="shrink-0 rounded-md bg-[#EC0000] px-2 py-1 text-[11px] font-extrabold tracking-wide text-white">
@@ -312,8 +324,16 @@ export function FinancingSimulator({
             </div>
           ) : (
             <>
-              <div className="rounded-xl border border-border bg-accent-soft px-4 py-3 text-[13px] text-body-text">
-                Simulación de <strong>crédito personal</strong> con tasas estimadas.
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900">
+                <p>
+                  <strong>Crédito personal de la casa</strong>, pensado para clientes
+                  que prefieren resolver la compra de forma directa y asistida.
+                </p>
+                <p className="mt-2">
+                  Se gestiona con <strong>recibo de sueldo</strong> y evaluación
+                  crediticia previa. El equipo te asesora para elegir el plan que
+                  mejor se adapte a tu presupuesto.
+                </p>
               </div>
               <a
                 href={personalCreditWhatsappHref}
@@ -325,10 +345,17 @@ export function FinancingSimulator({
               </a>
             </>
           )}
-          <p className="text-xs text-muted-soft">
-            Valores orientativos. El costo final puede variar según la tarjeta
-            y el banco.
-          </p>
+          {financingMethod === "getnet" ? (
+            <p className="text-xs text-muted-soft">
+              Valores orientativos. El costo final puede variar según la tarjeta
+              y el banco.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-soft">
+              Sujeto a evaluación y condiciones comerciales vigentes al momento
+              de la operación.
+            </p>
+          )}
         </div>
       )}
     </div>
