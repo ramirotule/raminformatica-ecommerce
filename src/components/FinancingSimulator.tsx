@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { GetnetMark } from "@/components/GetnetMark";
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatAmount, parseMoneyInput } from "@/lib/format";
-import { whatsappHref } from "@/lib/social";
 import { useCatalogStore } from "@/store/catalog-store";
 import { useStoreConfig } from "@/store/store-config";
 
@@ -90,10 +89,8 @@ export function FinancingSimulator({
       discountPct: getnet.discountPct24,
     },
   ];
-  const personalCreditWhatsappHref = whatsappHref(
-    supportPhone,
-    `Me interesa comprar el producto ${selected?.name ?? "XX"} con un credito personal.`,
-  );
+  const personalCreditWhatsappHref =
+    "https://api.whatsapp.com/send/?phone=5492954227622&text=Quisiera+averiguar+sobre+las+condiciones+para+los+creditos+personales.&type=phone_number&app_absent=0";
   const showControls = showHeader || !initialProductId;
   const compactLayout = !showHeader;
 
@@ -206,21 +203,29 @@ export function FinancingSimulator({
       </div>
       )}
       {showHeader && (
-        <div className="mt-3 flex max-w-[68rem] flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFinancingMethod("personal")}
-            className="inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-semibold text-amber-900 hover:border-amber-400 hover:bg-amber-100"
-          >
-            Crédito personal de la casa
-          </button>
+        <div className="mt-3 flex max-w-[68rem]">
           <a
             href={personalCreditWhatsappHref}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center rounded-lg border border-primary/35 bg-primary-soft px-3.5 py-2 text-xs font-semibold text-primary no-underline hover:bg-primary hover:text-white hover:!no-underline"
+            onClick={() => setFinancingMethod("personal")}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 text-sm font-bold text-amber-900 no-underline shadow-sm transition hover:border-amber-400 hover:bg-amber-100 hover:text-amber-950 hover:!no-underline sm:w-auto"
           >
-            Consultar por WhatsApp
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="2.5" y="6" width="19" height="12" rx="2.5" />
+              <path d="M2.5 10h19" />
+              <path d="M7 15h3" />
+            </svg>
+            Consultanos por los creditos personales de la casa
           </a>
         </div>
       )}
